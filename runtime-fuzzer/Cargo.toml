@@ -14,45 +14,31 @@ stats_alloc = "0.1.1"
 serde = { version = "1.0.193", features = ["derive"] }
 toml = "0.5"
 
-hydradx-runtime = { workspace = true }
-primitives = { workspace = true }
+hydradx-runtime = { git = "https://github.com/galacticcouncil/HydraDX-node.git", branch = "fuzz", default-features = false }
+primitives = { git = "https://github.com/galacticcouncil/HydraDX-node.git", branch = "fuzz", default-features = false }
+hydradx-traits = { git = "https://github.com/galacticcouncil/HydraDX-node.git", branch = "fuzz", default-features = false }
+scraper = { git = "https://github.com/galacticcouncil/HydraDX-node.git", branch = "fuzz", default-features = false }
+runtime-mock = { git = "https://github.com/galacticcouncil/HydraDX-node.git", branch = "fuzz", default-features = false }
 
-codec = { workspace = true }
+codec = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 
-frame-support = { workspace = true }
-frame-system = { workspace = true }
-frame-benchmarking = { workspace = true }
+frame-benchmarking = { git = "https://github.com/paritytech/polkadot-sdk", rev = "c8d2251cafadc108ba2f1f8a3208dc547ff38901", default-features = false }
+frame-support = { git = "https://github.com/paritytech/polkadot-sdk", rev = "c8d2251cafadc108ba2f1f8a3208dc547ff38901", default-features = false }
+frame-system = { git = "https://github.com/paritytech/polkadot-sdk", rev = "c8d2251cafadc108ba2f1f8a3208dc547ff38901", default-features = false }
 
-sp-core = { workspace = true }
-sp-consensus-aura = { workspace = true }
-sp-io = { workspace = true }
-sp-runtime = { workspace = true }
+sp-core = { git = "https://github.com/paritytech/polkadot-sdk", rev = "c8d2251cafadc108ba2f1f8a3208dc547ff38901", default-features = false }
+sp-consensus-aura = { git = "https://github.com/paritytech/polkadot-sdk", rev = "c8d2251cafadc108ba2f1f8a3208dc547ff38901", default-features = false }
+sp-io = { git = "https://github.com/paritytech/polkadot-sdk", rev = "c8d2251cafadc108ba2f1f8a3208dc547ff38901", default-features = false }
+sp-runtime = { git = "https://github.com/paritytech/polkadot-sdk", rev = "c8d2251cafadc108ba2f1f8a3208dc547ff38901", default-features = false }
 
-pallet-aura = { workspace = true }
-pallet-balances = { workspace = true }
-pallet-timestamp = { workspace = true }
-pallet-transaction-payment = { workspace = true }
-pallet-omnipool = { workspace = true }
-pallet-stableswap = { workspace = true }
-pallet-asset-registry = { workspace = true }
-pallet-staking = { workspace = true }
-pallet-utility = { workspace = true }
-pallet-multisig = { workspace = true }
-pallet-proxy = { workspace = true }
-pallet-collective = { workspace = true }
+orml-tokens = { git = "https://github.com/open-web3-stack/open-runtime-module-library", rev = "b3694e631df7f1ca16b1973122937753fcdee9d4", default-features = false }
 
-scraper = { workspace = true }
-runtime-mock = { workspace = true }
-
-orml-tokens = { workspace = true }
-hydradx-traits = {workspace = true}
-
-cumulus-pallet-parachain-system = { workspace = true }
-cumulus-primitives-core = { workspace = true }
-cumulus-primitives-parachain-inherent = { workspace = true }
-cumulus-test-relay-sproof-builder = { workspace = true }
+cumulus-pallet-parachain-system = { git = "https://github.com/paritytech/polkadot-sdk", rev = "c8d2251cafadc108ba2f1f8a3208dc547ff38901", default-features = false }
+cumulus-primitives-core = { git = "https://github.com/paritytech/polkadot-sdk", rev = "c8d2251cafadc108ba2f1f8a3208dc547ff38901", default-features = false }
+cumulus-primitives-parachain-inherent = { git = "https://github.com/paritytech/polkadot-sdk", rev = "c8d2251cafadc108ba2f1f8a3208dc547ff38901", default-features = false }
+cumulus-test-relay-sproof-builder = { git = "https://github.com/paritytech/polkadot-sdk", rev = "c8d2251cafadc108ba2f1f8a3208dc547ff38901", default-features = false }
 
 [features]
 default = ["std", "try-runtime"]
-std = ["hydradx-runtime/std", "codec/std", "sp-runtime/std", "frame-support/std", "pallet-timestamp/std", "sp-consensus-aura/std"]
-try-runtime = ["hydradx-runtime/try-runtime", "frame-support/try-runtime", "pallet-timestamp/try-runtime"]
+std = ["hydradx-runtime/std", "codec/std", "sp-runtime/std", "frame-support/std", "sp-consensus-aura/std"]
+try-runtime = ["hydradx-runtime/try-runtime", "frame-support/try-runtime"]
