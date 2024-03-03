@@ -59,6 +59,8 @@ const DELIMITER: [u8; 8] = [42; 8];
 #[cfg(not(fuzzing))]
 const FILENAME_MEMORY_MAP: &str = "memory_map.output";
 
+const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
+
 // We won't analyse those native Substrate pallets
 #[cfg(not(fuzzing))]
 const BLOCKLISTED_CALL: [&str; 7] = [
@@ -130,7 +132,6 @@ fn recursively_find_call(call: RuntimeCall, matches_on: fn(RuntimeCall) -> bool)
 	}
 	false
 }
-use runtime_mock::traits::TryExtrinsic;
 fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option<RuntimeCall> {
 	let extrinsics_handlers = runtime_mock::extrinsics_handlers();
 
@@ -148,6 +149,11 @@ fn main() {
 	if std::fs::remove_file(FILENAME_MEMORY_MAP).is_err() {
 		println!("Can't remove the map file, but it's not a problem.");
 	}
+
+	// Create SNAPSHOT from runtime_mock state
+	let mocked_externalities = hydradx_mocked_runtime();
+	let snapshot = PathBuf::from(SNAPSHOT_PATH);
+	scraper::save_externalities::<hydradx_runtime::Block>(mocked_externalities, snapshot).unwrap();
 
 	// List of accounts to choose as origin
 	let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
@@ -173,8 +179,8 @@ fn main() {
 		// TODO: consider reordering the code to avoid this and retrieve list of assets another way
 
 		// `externalities` represents the state of our mock chain.
-		let path = std::path::PathBuf::from("data/MOCK_SNAPSHOT");
-		let mut externalities = scraper::load_snapshot::<Block>(path).unwrap();
+		let snapshot = PathBuf::from(SNAPSHOT_PATH);
+		let mut externalities = scraper::load_snapshot::<Block>(snapshot).unwrap();
 
 		// load AssetIds
 		let mut assets: Vec<u32> = Vec::new();
