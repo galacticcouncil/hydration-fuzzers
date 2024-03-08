@@ -133,9 +133,7 @@ fn recursively_find_call(call: RuntimeCall, matches_on: fn(RuntimeCall) -> bool)
 	false
 }
 fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option<RuntimeCall> {
-	let extrinsics_handlers = runtime_mock::extrinsics_handlers();
-
-	for handler in extrinsics_handlers {
+	for handler in extrinsics_handlers() {
 		if let Some(call) = handler.try_extrinsic(identifier, data, assets) {
 			return Some(call);
 		}
@@ -202,7 +200,7 @@ fn main() {
 				// Min lengths required for the data
 				// - lapse is u32 (4 bytes),
 				// - origin is u16 (2 bytes)
-				// - structure fuzzer (1 byte)
+				// - structured fuzzer (1 byte)
 				// -> 7 bytes minimum
 				let min_data_len = 4 + 2 + 1;
 				if data.len() <= min_data_len {
@@ -692,6 +690,90 @@ impl MapHelper<'_> {
 				"Map saved in {}.\nYou can now run `cargo stardust memory`",
 				&FILENAME_MEMORY_MAP
 			);
+		}
+	}
+}
+
+pub trait TryExtrinsic<Call, AssetId> {
+	fn try_extrinsic(&self, identifier: u8, data: &[u8], assets: &[AssetId]) -> Option<Call>;
+}
+
+pub fn extrinsics_handlers() -> Vec<Box<dyn TryExtrinsic<RuntimeCall, u32>>> {
+	vec![Box::new(OmnipoolHandler {}), Box::new(StableswapHandler {})]
+}
+
+pub struct OmnipoolHandler;
+
+impl TryExtrinsic<RuntimeCall, u32> for OmnipoolHandler {
+	fn try_extrinsic(&self, identifier: u8, data: &[u8], assets: &[u32]) -> Option<RuntimeCall> {
+		match identifier {
+			0 if data.len() > 18 => {
+				let asset_in = assets[data[0] as usize % assets.len()];
+				let asset_out = assets[data[1] as usize % assets.len()];
+				let amount = u128::from_ne_bytes(data[2..18].try_into().ok()?);
+				Some(RuntimeCall::Omnipool(pallet_omnipool::Call::sell {
+					asset_in,
+					asset_out,
+					amount,
+					min_buy_amount: 0,
+				}))
+			}
+			1 if data.len() > 18 => {
+				let asset_in = assets[data[0] as usize % assets.len()];
+				let asset_out = assets[data[1] as usize % assets.len()];
+				let amount = u128::from_ne_bytes(data[2..18].try_into().ok()?);
+				Some(RuntimeCall::Omnipool(pallet_omnipool::Call::buy {
+					asset_in,
+					asset_out,
+					amount,
+					max_sell_amount: u128::MAX,
+				}))
+			}
+			2 if data.len() > 17 => {
+				let asset = assets[data[0] as usize % assets.len()];
+				let amount = u128::from_ne_bytes(data[1..17].try_into().ok()?);
+				Some(RuntimeCall::Omnipool(pallet_omnipool::Call::add_liquidity {
+					asset,
+					amount,
+				}))
+			}
+			_ => None,
+		}
+	}
+}
+
+pub struct StableswapHandler;
+
+impl TryExtrinsic<RuntimeCall, u32> for StableswapHandler {
+	fn try_extrinsic(&self, identifier: u8, data: &[u8], assets: &[u32]) -> Option<RuntimeCall> {
+		match identifier {
+			10 if data.len() > 19 => {
+				let pool_id = 100 + data[0] as u32 % 3; //TODO: make as parameter, currently ids of pools are 100,101,102
+				let asset_in = assets[data[1] as usize % assets.len()];
+				let asset_out = assets[data[2] as usize % assets.len()];
+				let amount_in = u128::from_ne_bytes(data[3..19].try_into().ok()?);
+				Some(RuntimeCall::Stableswap(pallet_stableswap::Call::sell {
+					pool_id,
+					asset_in,
+					asset_out,
+					amount_in,
+					min_buy_amount: 0,
+				}))
+			}
+			11 if data.len() > 19 => {
+				let pool_id = data[0] as u32 % 3; //TODO: make as parameter
+				let asset_in = assets[data[1] as usize % assets.len()];
+				let asset_out = assets[data[2] as usize % assets.len()];
+				let amount_out = u128::from_ne_bytes(data[3..19].try_into().ok()?);
+				Some(RuntimeCall::Stableswap(pallet_stableswap::Call::buy {
+					pool_id,
+					asset_in,
+					asset_out,
+					amount_out,
+					max_sell_amount: u128::MAX,
+				}))
+			}
+			_ => None,
 		}
 	}
 }

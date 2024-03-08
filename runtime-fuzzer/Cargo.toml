@@ -14,13 +14,14 @@ stats_alloc = "0.1.1"
 serde = { version = "1.0.193", features = ["derive"] }
 toml = "0.5"
 
-hydradx-runtime = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "46f3464ec0d47b389ee0f5759132a222faf219f9", default-features = false }
-primitives = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "46f3464ec0d47b389ee0f5759132a222faf219f9", default-features = false }
-hydradx-traits = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "46f3464ec0d47b389ee0f5759132a222faf219f9", default-features = false }
-scraper = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "46f3464ec0d47b389ee0f5759132a222faf219f9", default-features = false }
-runtime-mock = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "46f3464ec0d47b389ee0f5759132a222faf219f9", default-features = false }
-pallet-asset-registry = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "46f3464ec0d47b389ee0f5759132a222faf219f9", default-features = false }
-pallet-omnipool = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "46f3464ec0d47b389ee0f5759132a222faf219f9", default-features = false }
+hydradx-runtime = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "4fe24e07762b5a7adcb1064aefdb71719c42c174", default-features = false }
+primitives = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "4fe24e07762b5a7adcb1064aefdb71719c42c174", default-features = false }
+hydradx-traits = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "4fe24e07762b5a7adcb1064aefdb71719c42c174", default-features = false }
+scraper = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "4fe24e07762b5a7adcb1064aefdb71719c42c174", default-features = false }
+runtime-mock = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "4fe24e07762b5a7adcb1064aefdb71719c42c174", default-features = false }
+pallet-asset-registry = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "4fe24e07762b5a7adcb1064aefdb71719c42c174", default-features = false }
+pallet-omnipool = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "4fe24e07762b5a7adcb1064aefdb71719c42c174", default-features = false }
+pallet-stableswap = { git = "https://github.com/galacticcouncil/HydraDX-node.git", rev = "4fe24e07762b5a7adcb1064aefdb71719c42c174", default-features = false }
 
 
 codec = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
