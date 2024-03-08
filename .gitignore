@@ -4,4 +4,4 @@ runtime-fuzzer/output/*
 __pycache__/
 memory_map.output
 
-data/MOCK_SNAPSHOT
+runtime-fuzzer/data/MOCK_SNAPSHOT
