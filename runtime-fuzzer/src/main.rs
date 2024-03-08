@@ -147,7 +147,7 @@ fn main() {
 	// We ensure that on each run, the mapping is a fresh one
 	#[cfg(not(any(fuzzing, coverage)))]
 	if std::fs::remove_file(FILENAME_MEMORY_MAP).is_err() {
-		println!("Can't remove the map file, but it's not a problem.");
+		// println!("Can't remove the map file, but it's not a problem.");
 	}
 
 	// Create SNAPSHOT from runtime_mock state
