@@ -4,9 +4,9 @@ version = "0.3.0"
 description = "Fuzzer for the Hydration Runtime"
 authors = ["GalacticCouncil"]
 edition = "2021"
-homepage = "https://github.com/galacticcouncil/Hydration-fuzzers"
+homepage = "https://github.com/galacticcouncil/hydration-fuzzers"
 license = "Apache 2.0"
-repository = "https://github.com/galacticcouncil/Hydration-fuzzers"
+repository = "https://github.com/galacticcouncil/hydration-fuzzers"
 
 [dependencies]
 ziggy = { version = "1.0.2", default-features = false }
@@ -14,14 +14,14 @@ stats_alloc = "0.1.1"
 serde = { version = "1.0.193", features = ["derive"] }
 toml = "0.5"
 
-hydradx-runtime = { path = "../../Hydration-node/runtime/hydradx" }
-hydradx-traits = { path = "../../Hydration-node/traits" }
-primitives = { path = "../../Hydration-node/primitives" }
-scraper = { path = "../../Hydration-node/scraper" }
-runtime-mock = { path = "../../Hydration-node/runtime-mock" }
-pallet-asset-registry = { path = "../../Hydration-node/pallets/asset-registry" }
-pallet-omnipool = { path = "../../Hydration-node/pallets/omnipool" }
-pallet-stableswap = { path = "../../Hydration-node/pallets/stableswap" }
+hydradx-runtime = { path = "../../hydration-node/runtime/hydradx" }
+hydradx-traits = { path = "../../hydration-node/traits" }
+primitives = { path = "../../hydration-node/primitives" }
+scraper = { path = "../../hydration-node/scraper" }
+runtime-mock = { path = "../../hydration-node/runtime-mock" }
+pallet-asset-registry = { path = "../../hydration-node/pallets/asset-registry" }
+pallet-omnipool = { path = "../../hydration-node/pallets/omnipool" }
+pallet-stableswap = { path = "../../hydration-node/pallets/stableswap" }
 
 
 codec = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
