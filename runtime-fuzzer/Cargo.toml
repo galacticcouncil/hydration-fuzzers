@@ -23,7 +23,7 @@ pallet-asset-registry = { path = "../../hydration-node/pallets/asset-registry" }
 pallet-omnipool = { path = "../../hydration-node/pallets/omnipool" }
 pallet-stableswap = { path = "../../hydration-node/pallets/stableswap" }
 
-
+arbitrary = { version = "1.0.1", features = ["derive"] }
 codec = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 
 frame-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "release-polkadot-v1.11.0-patch", default-features = false }
