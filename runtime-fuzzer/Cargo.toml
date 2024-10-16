@@ -49,7 +49,7 @@ pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch
 pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "release-polkadot-v1.11.0-patch", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "release-polkadot-v1.11.0-patch", default-features = false }
 pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "release-polkadot-v1.11.0-patch", default-features = false }
-quinn-proto = "0.9.6"
+quinn-proto = { version = "0.9.6", features = ["arbitrary"] }
 
 [features]
 default = ["std", "try-runtime"]
