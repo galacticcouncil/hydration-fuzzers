@@ -1,1 +1,1 @@
-# HydraDX-fuzzers
+# hydration-fuzzers

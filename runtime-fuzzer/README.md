@@ -1,5 +1,5 @@
-# HydraDX Runtime Fuzzer
-A fuzzer for the HydraDX Runtime which is based on [ziggy](https://github.com/srlabs/ziggy/) and [substrate-runtime-fuzzer](https://github.com/srlabs/substrate-runtime-fuzzer/tree/main) - both developed by [SRLabs](https://github.com/srlabs).
+# Hydration Runtime Fuzzer
+A fuzzer for the Hydration Runtime which is based on [ziggy](https://github.com/srlabs/ziggy/) and [substrate-runtime-fuzzer](https://github.com/srlabs/substrate-runtime-fuzzer/tree/main) - both developed by [SRLabs](https://github.com/srlabs).
 
 Runs under the hood multiple fuzzers in parallel - [honggfuzz](https://github.com/google/honggfuzz) and [AFL++](https://github.com/aflplusplus/aflplusplus).
 
@@ -24,7 +24,7 @@ cargo ziggy fuzz -h
 cargo ziggy fuzz -t 22 -j 22
 
 More live information by running:
-tail -f ./output/hydradx-runtime-fuzzer/logs/afl.log
-tail -f ./output/hydradx-runtime-fuzzer/logs/afl_1.log
-tail -f ./output/hydradx-runtime-fuzzer/logs/honggfuzz.log
+tail -f ./output/hydration-runtime-fuzzer/logs/afl.log
+tail -f ./output/hydration-runtime-fuzzer/logs/afl_1.log
+tail -f ./output/hydration-runtime-fuzzer/logs/honggfuzz.log
 ```

@@ -1,4 +1,4 @@
-/// hydraDX fuzzer v2.0.0
+/// hydration fuzzer v2.2.2
 /// Inspired by the harness sent to HydraDX from srlabs.de on 01.11.2023
 use codec::{DecodeLimit, Encode};
 #[cfg(all(not(feature = "deprecated-substrate"), feature = "try-runtime"))]
