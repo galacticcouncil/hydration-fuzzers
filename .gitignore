@@ -2,7 +2,7 @@
 
 runtime-fuzzer/output/*
 runtime-fuzzer/output.old/*
-runtime-fuzzer/minimize/*
+runtime-fuzzer/minimized/*
 __pycache__/
 memory_map.output
 
