@@ -1,6 +1,8 @@
 **/target/
 
 runtime-fuzzer/output/*
+runtime-fuzzer/output.old/*
+runtime-fuzzer/minimize/*
 __pycache__/
 memory_map.output
 
