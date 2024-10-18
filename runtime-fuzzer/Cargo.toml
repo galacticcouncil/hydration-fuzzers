@@ -13,6 +13,7 @@ ziggy = { version = "1.2.1", default-features = false }
 stats_alloc = "0.1.1"
 serde = { version = "1.0.193", features = ["derive"] }
 toml = "0.5"
+quinn-proto = { version = "0.9.6", features = ["arbitrary"] }
 
 hydradx-runtime = { path = "../../hydration-node/runtime/hydradx" }
 hydradx-traits = { path = "../../hydration-node/traits" }
@@ -22,7 +23,6 @@ runtime-mock = { path = "../../hydration-node/runtime-mock" }
 pallet-asset-registry = { path = "../../hydration-node/pallets/asset-registry" }
 pallet-omnipool = { path = "../../hydration-node/pallets/omnipool" }
 pallet-stableswap = { path = "../../hydration-node/pallets/stableswap" }
-
 
 codec = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 
@@ -49,7 +49,6 @@ pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch
 pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "release-polkadot-v1.11.0-patch2", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "release-polkadot-v1.11.0-patch2", default-features = false }
 pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "release-polkadot-v1.11.0-patch2", default-features = false }
-quinn-proto = { version = "0.9.6", features = ["arbitrary"] }
 
 [features]
 default = ["std", "try-runtime"]
