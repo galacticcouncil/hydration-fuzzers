@@ -6,4 +6,6 @@ runtime-fuzzer/minimized/*
 __pycache__/
 memory_map.output
 
+.idea/
+
 runtime-fuzzer/data/MOCK_SNAPSHOT
