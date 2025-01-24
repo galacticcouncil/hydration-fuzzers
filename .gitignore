@@ -1,11 +1,12 @@
 **/target/
 
+runtime-fuzzer/current_crashes/*
+runtime-fuzzer/data/MOCK_SNAPSHOT
+runtime-fuzzer/minimized/*
 runtime-fuzzer/output/*
 runtime-fuzzer/output.old/*
-runtime-fuzzer/minimized/*
+
 __pycache__/
 memory_map.output
 
 .idea/
-
-runtime-fuzzer/data/MOCK_SNAPSHOT
