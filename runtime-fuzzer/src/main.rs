@@ -150,8 +150,8 @@ fn main() {
 
 	// Create SNAPSHOT from runtime_mock state
 	let mocked_externalities = hydradx_mocked_runtime();
-	let snapshot = PathBuf::from(SNAPSHOT_PATH);
-	scraper::save_externalities::<hydradx_runtime::Block>(mocked_externalities, snapshot).unwrap();
+	let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
+	scraper::save_externalities::<hydradx_runtime::Block>(mocked_externalities, snapshot_path).unwrap();
 
 	// List of accounts to choose as origin
 	let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
@@ -177,8 +177,13 @@ fn main() {
 		// TODO: consider reordering the code to avoid this and retrieve list of assets another way
 
 		// `externalities` represents the state of our mock chain.
-		let snapshot = PathBuf::from(SNAPSHOT_PATH);
-		let mut externalities = scraper::load_snapshot::<Block>(snapshot).unwrap();
+		let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
+		let mut externalities;
+		if let Ok(snapshot) = scraper::load_snapshot::<Block>(snapshot_path) {
+			externalities = snapshot;
+		} else {
+			externalities = hydradx_mocked_runtime();
+		}
 
 		// load AssetIds
 		let mut assets: Vec<u32> = Vec::new();
