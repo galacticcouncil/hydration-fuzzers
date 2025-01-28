@@ -66,7 +66,7 @@ const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
 
 // We won't analyse those native Substrate pallets
 #[cfg(not(fuzzing))]
-const BLOCKLISTED_CALL: [&str; 7] = [
+const BLOCKLISTED_CALL: [&str; 8] = [
     "RuntimeCall::System",
     "RuntimeCall::Utility",
     "RuntimeCall::Proxy",
@@ -75,6 +75,7 @@ const BLOCKLISTED_CALL: [&str; 7] = [
     "RuntimeCall::Timestamp",
     // to prevent false negatives from debug_assert_ne
     "RuntimeCall::XTokens",
+    "RuntimeCall::Council",
 ];
 
 struct Data<'a> {
