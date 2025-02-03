@@ -66,7 +66,7 @@ const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
 
 // We won't analyse those native Substrate pallets
 #[cfg(not(fuzzing))]
-const BLOCKLISTED_CALL: [&str; 8] = [
+const BLACKLISTED_CALLS: [&str; 9] = [
     "RuntimeCall::System",
     "RuntimeCall::Utility",
     "RuntimeCall::Proxy",
@@ -76,6 +76,7 @@ const BLOCKLISTED_CALL: [&str; 8] = [
     // to prevent false negatives from debug_assert_ne
     "RuntimeCall::XTokens",
     "RuntimeCall::Council",
+    "RuntimeCall::Referenda",
 ];
 
 struct Data<'a> {
@@ -718,7 +719,7 @@ impl MapHelper<'_> {
                 .open(FILENAME_MEMORY_MAP)?;
             // Skip writing if extrinsic_name contains any blocklisted calls
             for (extrinsic_name, extrinsic_infos) in self.mapper.map.iter() {
-                if BLOCKLISTED_CALL
+                if BLACKLISTED_CALLS
                     .iter()
                     .any(|&call| extrinsic_name.contains(call))
                 {
