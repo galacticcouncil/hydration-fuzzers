@@ -35,7 +35,7 @@ def extract_last_lines_before_stack_trace(log, nbr=10):
 
     stack_trace_start = None
     for i, line in enumerate(lines):
-        if re.match(r"^\s*at\s", line):
+        if re.match(r"^stack backtrace\s*", line):
             stack_trace_start = i
             break
 
