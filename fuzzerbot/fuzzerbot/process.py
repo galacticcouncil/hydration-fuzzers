@@ -2,6 +2,7 @@ import re
 import subprocess
 
 CRASH_RUNNER = 'run_crash.sh'
+CRASH_SCRIPT_PATH = '.'
 
 
 def process_crash_report(filename):
@@ -22,7 +23,7 @@ def process_crash_report(filename):
 
 def run_crash(file_path):
     try:
-        result = subprocess.run(['bash', CRASH_RUNNER, file_path], capture_output=True, text=True)
+        result = subprocess.run(['bash', CRASH_RUNNER, file_path], capture_output=True, text=True, cwd=CRASH_SCRIPT_PATH)
         return result.stdout
     except Exception as e:
         print(f"Error running script: {e}")
