@@ -4,21 +4,37 @@ import subprocess
 
 CRASH_RUNNER = 'just crash'
 
+FILTERS = [
+    "referenda/src/lib.rs:926:9",
+    "polkadot/xcm/src/v4/asset.rs:307:9",
+]
+
 
 def process_crash_report(filename):
     try:
         output = run_crash(filename)
         if output:
             panic_log = extract_panic(output)
+
             if panic_log:
-                return format_message(filename, "\n".join(panic_log))
+                if is_filtered(panic_log):
+                    return True, format_filtered_message(filename, "\n".join(panic_log))
+                return False, format_message(filename, "\n".join(panic_log))
             else:
-                return format_message(filename, "No panic log found in the log.")
+                return True, format_message(filename, "No panic log found in the log.")
         else:
-            return format_message(filename, f"{CRASH_RUNNER} produced no output.")
+            return True, format_message(filename, f"{CRASH_RUNNER} produced no output.")
     except Exception as e:
         print(f"Error processing crash report: {e}")
         return None
+
+
+def is_filtered(report):
+    for line in report:
+        if any(filter_ in line for filter_ in FILTERS):
+            return True
+
+    return False
 
 
 def run_crash(file_path):
@@ -57,5 +73,12 @@ def format_message(fn, message):
     filename = f"Crash report: {fn}"
     report = f"```{message}```"
     return f"{filename}\n{report}"
+
+#
+
+def format_filtered_message(fn, message):
+    filename = f"Crash report: {fn}"
+    report = f"```{message}```"
+    return f"-----------FILTERED----------\n{filename}\n{report}\n-------------------"
 
 #

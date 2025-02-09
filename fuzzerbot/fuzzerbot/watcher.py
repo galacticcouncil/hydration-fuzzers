@@ -69,5 +69,8 @@ class Consumer:
 
     async def consume(self):
         async for event in EventIterator(self._queue):
-            msg = process_crash_report(event)
-            await self._client.send(msg)
+            filtered, msg = process_crash_report(event)
+            if filtered:
+                print(f"Filtered crash report: {event}\n {msg}")
+            else:
+                await self._client.send(msg)
