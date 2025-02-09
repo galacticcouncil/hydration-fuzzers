@@ -1,4 +1,21 @@
+import aiohttp
 import discord
+
+from discord import Webhook
+
+
+class WebhookService:
+
+    def __init__(self, webhook_url):
+        self._webhook_url = webhook_url
+
+    async def send(self, message):
+        async with aiohttp.ClientSession() as _session:
+            webhook = Webhook.from_url(self._webhook_url, session=_session)
+            await webhook.send(message, username='Fuzzer')
+
+    async def start(self):
+        pass
 
 
 class ReportService:
