@@ -3,26 +3,26 @@ import re
 import subprocess
 
 CRASH_RUNNER = 'just crash'
-CRASH_SCRIPT_DIR = os.getenv('CRASH_SCRIPT_DIR') or "."
 
 
 def process_crash_report(filename):
     try:
         output = run_crash(filename)
         if output:
-            last_lines = extract_last_lines_before_stack_trace(output)
-            if last_lines:
-                return format_message(filename, "\n".join(last_lines))
+            panic_log = extract_panic(output)
+            if panic_log:
+                return format_message(filename, "\n".join(panic_log))
             else:
-                return "No stack trace found in the log."
+                return format_message(filename, "No panic log found in the log.")
         else:
-            return "No output from the custom script."
+            return format_message(filename, f"{CRASH_RUNNER} produced no output.")
     except Exception as e:
         print(f"Error processing crash report: {e}")
         return None
 
 
 def run_crash(file_path):
+    CRASH_SCRIPT_DIR = os.getenv('CRASH_SCRIPT_DIR')
     try:
         p = CRASH_RUNNER.split()
         p.append(file_path)
@@ -33,18 +33,22 @@ def run_crash(file_path):
         return None
 
 
-def extract_last_lines_before_stack_trace(log, nbr=10):
+def extract_panic(log):
     lines = log.splitlines()
 
     stack_trace_start = None
+    stack_trace_end = None
     for i, line in enumerate(lines):
-        if re.match(r"^stack backtrace\s*", line):
+        if re.match(r"^thread 'main' panicked\s*", line):
             stack_trace_start = i
+        if re.match(r"^stack backtrace\s*", line):
+            stack_trace_end = i
+
+        if stack_trace_start and stack_trace_end:
             break
 
-    if stack_trace_start is not None:
-        start_line = max(0, stack_trace_start - nbr)
-        return lines[start_line:stack_trace_start]
+    if stack_trace_start and stack_trace_start:
+        return lines[stack_trace_start:stack_trace_end]
     else:
         return None  # If no stack trace is found
 
