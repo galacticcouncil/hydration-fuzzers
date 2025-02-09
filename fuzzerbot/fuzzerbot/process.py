@@ -7,6 +7,7 @@ CRASH_RUNNER = 'just crash'
 FILTERS = [
     "referenda/src/lib.rs:926:9",
     "polkadot/xcm/src/v4/asset.rs:307:9",
+    "frame/support/src/traits/misc.rs:218:17",
 ]
 
 

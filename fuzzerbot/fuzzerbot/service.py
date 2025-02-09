@@ -15,7 +15,7 @@ class WebhookService:
             await webhook.send(message, username='Fuzzer')
 
     async def start(self):
-        pass
+        await self.send("Fuzzerbot started - testing webhook ... ok")
 
 
 class ReportService:
