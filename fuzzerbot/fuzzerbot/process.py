@@ -8,6 +8,7 @@ FILTERS = [
     "referenda/src/lib.rs:926:9",
     "polkadot/xcm/src/v4/asset.rs:307:9",
     "frame/support/src/traits/misc.rs:218:17",
+    "stableswap/src/lib.rs:1525:9",
 ]
 
 
