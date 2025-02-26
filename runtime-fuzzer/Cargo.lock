@@ -3356,9 +3356,9 @@ dependencies = [
  "hydra-dx-math",
  "hydradx-traits",
  "log",
- "orml-tokens 1.0.0",
- "orml-traits 1.0.0",
- "orml-utilities 1.0.0",
+ "orml-tokens",
+ "orml-traits",
+ "orml-utilities",
  "orml-vesting",
  "orml-xcm-support",
  "pallet-asset-registry",
@@ -3425,8 +3425,8 @@ dependencies = [
  "module-evm-utility-macro",
  "num_enum",
  "orml-benchmarking",
- "orml-tokens 1.0.0",
- "orml-traits 1.0.0",
+ "orml-tokens",
+ "orml-traits",
  "orml-unknown-tokens",
  "orml-vesting",
  "orml-xcm",
@@ -3563,7 +3563,7 @@ dependencies = [
  "frame-system",
  "hydradx-runtime",
  "hydradx-traits",
- "orml-tokens 0.12.0",
+ "orml-tokens",
  "pallet-asset-registry",
  "pallet-balances",
  "pallet-collective",
@@ -5819,29 +5819,13 @@ dependencies = [
 
 [[package]]
 name = "orml-tokens"
-version = "0.12.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-v1.11.0#0347ec813ce6cf3e1148a3bedcdf4c0a4e85b0da"
-dependencies = [
- "frame-support",
- "frame-system",
- "log",
- "orml-traits 0.12.0",
- "parity-scale-codec",
- "scale-info",
- "sp-arithmetic",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "orml-tokens"
 version = "1.0.0"
 source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2409#60b88b84a6abbf8e12a884bf1c3774ff2db1f880"
 dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -5852,32 +5836,13 @@ dependencies = [
 
 [[package]]
 name = "orml-traits"
-version = "0.12.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-v1.11.0#0347ec813ce6cf3e1148a3bedcdf4c0a4e85b0da"
-dependencies = [
- "frame-support",
- "impl-trait-for-tuples",
- "num-traits",
- "orml-utilities 0.12.0",
- "parity-scale-codec",
- "paste",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "staging-xcm",
-]
-
-[[package]]
-name = "orml-traits"
 version = "1.0.0"
 source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2409#60b88b84a6abbf8e12a884bf1c3774ff2db1f880"
 dependencies = [
  "frame-support",
  "impl-trait-for-tuples",
  "num-traits",
- "orml-utilities 1.0.0",
+ "orml-utilities",
  "parity-scale-codec",
  "paste",
  "scale-info",
@@ -5902,20 +5867,6 @@ dependencies = [
  "serde",
  "sp-std",
  "staging-xcm",
-]
-
-[[package]]
-name = "orml-utilities"
-version = "0.12.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-v1.11.0#0347ec813ce6cf3e1148a3bedcdf4c0a4e85b0da"
-dependencies = [
- "frame-support",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
@@ -5968,7 +5919,7 @@ version = "1.0.0"
 source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2409#60b88b84a6abbf8e12a884bf1c3774ff2db1f880"
 dependencies = [
  "frame-support",
- "orml-traits 1.0.0",
+ "orml-traits",
  "parity-scale-codec",
  "sp-runtime",
  "sp-std",
@@ -5984,7 +5935,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "orml-xcm-support",
  "pallet-xcm",
  "parity-scale-codec",
@@ -6044,7 +5995,7 @@ dependencies = [
  "frame-system",
  "hydradx-traits",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "parity-scale-codec",
  "primitive-types",
  "scale-info",
@@ -6199,7 +6150,7 @@ dependencies = [
  "frame-system",
  "hydradx-traits",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-timestamp",
  "parity-scale-codec",
  "primitive-types",
@@ -6293,7 +6244,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-session",
  "parity-scale-codec",
  "scale-info",
@@ -6362,8 +6313,8 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hydradx-traits",
- "orml-traits 1.0.0",
- "orml-utilities 1.0.0",
+ "orml-traits",
+ "orml-utilities",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -6396,7 +6347,7 @@ dependencies = [
  "hydradx-adapters",
  "hydradx-traits",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-broadcast",
  "pallet-ema-oracle",
  "pallet-omnipool",
@@ -6450,7 +6401,7 @@ dependencies = [
  "frame-system",
  "hydradx-traits",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -6469,7 +6420,7 @@ dependencies = [
  "hydra-dx-math",
  "hydradx-traits",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-evm",
  "parity-scale-codec",
  "primitives",
@@ -6785,8 +6736,8 @@ dependencies = [
  "frame-system",
  "hydra-dx-math",
  "hydradx-traits",
- "orml-tokens 1.0.0",
- "orml-traits 1.0.0",
+ "orml-tokens",
+ "orml-traits",
  "pallet-broadcast",
  "parity-scale-codec",
  "primitive-types",
@@ -6832,7 +6783,7 @@ dependencies = [
  "frame-system",
  "hydra-dx-math",
  "hydradx-traits",
- "orml-traits 1.0.0",
+ "orml-traits",
  "parity-scale-codec",
  "scale-info",
  "sp-arithmetic",
@@ -6903,7 +6854,7 @@ dependencies = [
  "hydradx-traits",
  "impl-trait-for-tuples",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-balances",
  "pallet-broadcast",
  "parity-scale-codec",
@@ -6924,7 +6875,7 @@ dependencies = [
  "hydra-dx-math",
  "hydradx-traits",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-balances",
  "pallet-ema-oracle",
  "pallet-liquidity-mining",
@@ -6948,7 +6899,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hydradx-traits",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-broadcast",
  "parity-scale-codec",
  "scale-info",
@@ -7033,7 +6984,7 @@ dependencies = [
  "hex-literal",
  "hydra-dx-math",
  "hydradx-traits",
- "orml-traits 1.0.0",
+ "orml-traits",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
@@ -7065,7 +7016,7 @@ dependencies = [
  "frame-system",
  "hydra-dx-math",
  "hydradx-traits",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-balances",
  "pallet-broadcast",
  "parity-scale-codec",
@@ -7126,7 +7077,7 @@ dependencies = [
  "hydra-dx-math",
  "hydradx-traits",
  "num-traits",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-broadcast",
  "parity-scale-codec",
  "scale-info",
@@ -7146,7 +7097,7 @@ dependencies = [
  "frame-system",
  "hydra-dx-math",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-conviction-voting",
  "pallet-democracy",
  "pallet-referenda",
@@ -7250,7 +7201,7 @@ dependencies = [
  "frame-system",
  "hydra-dx-math",
  "hydradx-traits",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-evm",
  "pallet-transaction-payment",
  "pallet-utility",
@@ -7414,8 +7365,8 @@ dependencies = [
  "hydra-dx-math",
  "hydradx-traits",
  "log",
- "orml-tokens 1.0.0",
- "orml-traits 1.0.0",
+ "orml-tokens",
+ "orml-traits",
  "pallet-broadcast",
  "parity-scale-codec",
  "primitive-types",
@@ -7435,7 +7386,7 @@ dependencies = [
  "frame-system",
  "hydradx-traits",
  "log",
- "orml-traits 1.0.0",
+ "orml-traits",
  "pallet-liquidity-mining",
  "pallet-xyk",
  "parity-scale-codec",
@@ -8805,7 +8756,7 @@ dependencies = [
  "frame-system",
  "hydradx-runtime",
  "hydradx-traits",
- "orml-tokens 1.0.0",
+ "orml-tokens",
  "pallet-asset-registry",
  "pallet-omnipool",
  "pallet-stableswap",
