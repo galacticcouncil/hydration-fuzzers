@@ -1,5 +1,3 @@
-/// hydration fuzzer v2.2.2
-/// Inspired by the harness sent to HydraDX from srlabs.de on 01.11.2023
 use codec::{DecodeLimit, Encode};
 #[cfg(all(not(feature = "deprecated-substrate"), feature = "try-runtime"))]
 #[allow(unused_imports)]
@@ -19,10 +17,7 @@ use sp_runtime::{
 };
 use std::path::PathBuf;
 #[cfg(feature = "deprecated-substrate")]
-use {
-    frame_support::weights::constants::WEIGHT_PER_SECOND as WEIGHT_REF_TIME_PER_SECOND,
-    sp_runtime::traits::Zero,
-};
+use {frame_support::weights::constants::WEIGHT_PER_SECOND as WEIGHT_REF_TIME_PER_SECOND, sp_runtime::traits::Zero};
 
 /// Types from the fuzzed runtime.
 type FuzzedRuntime = hydradx_runtime::Runtime;
@@ -126,14 +121,10 @@ fn recursively_find_call(call: RuntimeCall, matches_on: fn(RuntimeCall) -> bool)
                 return true;
             }
         }
-    } else if let RuntimeCall::Multisig(pallet_multisig::Call::as_multi_threshold_1 {
-        call, ..
-    })
+    } else if let RuntimeCall::Multisig(pallet_multisig::Call::as_multi_threshold_1 { call, .. })
     | RuntimeCall::Utility(pallet_utility::Call::as_derivative { call, .. })
     | RuntimeCall::Proxy(pallet_proxy::Call::proxy { call, .. })
-    | RuntimeCall::Council(pallet_collective::Call::propose {
-        proposal: call, ..
-    }) = call
+    | RuntimeCall::Council(pallet_collective::Call::propose { proposal: call, .. }) = call
     {
         return recursively_find_call(*call.clone(), matches_on);
     } else if matches_on(call) {
@@ -150,7 +141,7 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
     None
 }
 
-fn main() {
+pub fn main() {
     // We ensure that on each run, the mapping is a fresh one
     #[cfg(not(any(fuzzing, coverage)))]
     if std::fs::remove_file(FILENAME_MEMORY_MAP).is_err() {
@@ -160,8 +151,7 @@ fn main() {
     // Create SNAPSHOT from runtime_mock state
     let mocked_externalities = hydradx_mocked_runtime();
     let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
-    scraper::save_externalities::<hydradx_runtime::Block>(mocked_externalities, snapshot_path)
-        .unwrap();
+    scraper::save_externalities::<hydradx_runtime::Block>(mocked_externalities, snapshot_path).unwrap();
 
     // List of accounts to choose as origin
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
@@ -240,13 +230,12 @@ fn main() {
                     return None;
                 }
 
-                let maybe_extrinsic = if let Some(extrinsic) =
-                    try_specific_extrinsic(specific_extrinsic, encoded_extrinsic, &assets)
-                {
-                    Ok(extrinsic)
-                } else {
-                    DecodeLimit::decode_all_with_depth_limit(32, &mut encoded_extrinsic)
-                };
+                let maybe_extrinsic =
+                    if let Some(extrinsic) = try_specific_extrinsic(specific_extrinsic, encoded_extrinsic, &assets) {
+                        Ok(extrinsic)
+                    } else {
+                        DecodeLimit::decode_all_with_depth_limit(32, &mut encoded_extrinsic)
+                    };
 
                 if let Ok(decoded_extrinsic) = maybe_extrinsic {
                     if maybe_lapse.is_some() {
@@ -298,18 +287,33 @@ fn main() {
             println!("Setting Timestamp");
             // We apply the timestamp extrinsic for the current block.
             Executive::apply_extrinsic(UncheckedExtrinsic::new_unsigned(RuntimeCall::Timestamp(
-                pallet_timestamp::Call::set {
-                    now: current_timestamp,
-                },
+                pallet_timestamp::Call::set { now: current_timestamp },
             )))
             .unwrap()
             .unwrap();
 
+            println!("Parachain validation data");
+
             let parachain_validation_data = {
                 use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
 
-                let (relay_storage_root, proof) =
-                    RelayStateSproofBuilder::default().into_state_root_and_proof();
+                let parent_head_data = {
+                    let header = cumulus_primitives_core::relay_chain::Header::new(
+                        block,
+                        sp_core::H256::from_low_u64_be(0),
+                        sp_core::H256::from_low_u64_be(0),
+                        Default::default(),
+                        Default::default(),
+                    );
+                    cumulus_primitives_core::relay_chain::HeadData(header.encode())
+                };
+
+                let mut sproof_builder = RelayStateSproofBuilder::default();
+
+                sproof_builder.para_id = hydradx_runtime::ParachainInfo::get();
+                sproof_builder.included_para_head = Some(parent_head_data.clone());
+
+                let (relay_storage_root, proof) = sproof_builder.into_state_root_and_proof();
 
                 cumulus_pallet_parachain_system::Call::set_validation_data {
                     data: cumulus_primitives_parachain_inherent::ParachainInherentData {
@@ -326,11 +330,15 @@ fn main() {
                 }
             };
 
-            Executive::apply_extrinsic(UncheckedExtrinsic::new_unsigned(
-                RuntimeCall::ParachainSystem(parachain_validation_data),
-            ))
+            println!("Setting new validation data");
+
+            Executive::apply_extrinsic(UncheckedExtrinsic::new_unsigned(RuntimeCall::ParachainSystem(
+                parachain_validation_data,
+            )))
             .unwrap()
             .unwrap();
+
+            println!("Setting new validation data done");
 
             // Calls that need to be executed before each block starts (init_calls) go here
         };
@@ -343,8 +351,7 @@ fn main() {
             #[cfg(not(fuzzing))]
             println!("Testing invariants for block {_block}");
 
-            <AllPalletsWithSystem as TryState<BlockNumber>>::try_state(_block, TryStateSelect::All)
-                .unwrap();
+            <AllPalletsWithSystem as TryState<BlockNumber>>::try_state(_block, TryStateSelect::All).unwrap();
         };
 
         #[cfg(not(any(fuzzing, coverage)))]
@@ -360,9 +367,7 @@ fn main() {
 
         // Calls that need to be executed in the first block go here
         for (maybe_lapse, origin, extrinsic) in extrinsics {
-            if recursively_find_call(extrinsic.clone(), |call| {
-                matches!(&call, RuntimeCall::XTokens(..))
-            }) {
+            if recursively_find_call(extrinsic.clone(), |call| matches!(&call, RuntimeCall::XTokens(..))) {
                 #[cfg(not(fuzzing))]
                 println!("    Skipping because of custom filter");
                 continue;
@@ -426,8 +431,7 @@ fn main() {
 
                 #[cfg(not(any(fuzzing, coverage)))]
                 {
-                    let elapsed =
-                        Duration::from_nanos(mapper.get_elapsed().try_into().unwrap()).as_secs();
+                    let elapsed = Duration::from_nanos(mapper.get_elapsed().try_into().unwrap()).as_secs();
                     if elapsed > MAX_TIME_FOR_BLOCK {
                         panic!("block execution took too much time - {}", elapsed)
                     }
@@ -464,6 +468,7 @@ fn main() {
     });
 }
 
+use frame_support::pallet_prelude::Get;
 #[cfg(not(any(fuzzing, coverage)))]
 use frame_support::{dispatch::DispatchResultWithPostInfo, traits::Currency};
 #[cfg(not(any(fuzzing, coverage)))]
@@ -565,12 +570,7 @@ impl Display for MappingData {
         writeln!(
             f,
             ";{};{};{};{};{};{}\n",
-            self.fee,
-            self.balance_delta,
-            self.reserve_delta,
-            self.lock_delta,
-            self.memory_delta,
-            self.elapsed
+            self.fee, self.balance_delta, self.reserve_delta, self.lock_delta, self.memory_delta, self.elapsed
         )
     }
 }
@@ -594,9 +594,7 @@ impl MemoryMapper<'_> {
     }
 
     fn get_elapsed(&self) -> u128 {
-        self.map
-            .get(&self.extrinsic_name)
-            .map_or(0, |data| data.elapsed)
+        self.map.get(&self.extrinsic_name).map_or(0, |data| data.elapsed)
     }
 
     fn initialize_extrinsic(&mut self, origin: AccountId, extrinsic_name: String) {
@@ -615,33 +613,23 @@ impl MemoryMapper<'_> {
         self.snapshot.balance_before = <pallet_balances::Pallet<Runtime>>::total_balance(&origin)
             .try_into()
             .unwrap();
-        self.snapshot.reserved_before =
-            <pallet_balances::Pallet<Runtime>>::reserved_balance(&origin)
-                .try_into()
-                .unwrap();
+        self.snapshot.reserved_before = <pallet_balances::Pallet<Runtime>>::reserved_balance(&origin)
+            .try_into()
+            .unwrap();
 
         self.snapshot.timer = Some(Instant::now());
 
         println!("  origin:     {:?}", origin);
     }
 
-    fn finalize_extrinsic(
-        &mut self,
-        res: DispatchResultWithPostInfo,
-        extrinsic: RuntimeCall,
-        origin: AccountId,
-    ) {
+    fn finalize_extrinsic(&mut self, res: DispatchResultWithPostInfo, extrinsic: RuntimeCall, origin: AccountId) {
         if res.is_err() {
             return;
         }
 
-        let refreshed_alloc = self
-            .allocator
-            .expect("Allocator should be set at that point")
-            .stats();
+        let refreshed_alloc = self.allocator.expect("Allocator should be set at that point").stats();
 
-        let memory_delta: DeltaSize = (refreshed_alloc.bytes_allocated as DeltaSize
-            - self.snapshot.allocated_before)
+        let memory_delta: DeltaSize = (refreshed_alloc.bytes_allocated as DeltaSize - self.snapshot.allocated_before)
             - (refreshed_alloc.bytes_deallocated as DeltaSize - self.snapshot.deallocated_before);
 
         let elapsed = self
@@ -662,10 +650,9 @@ impl MemoryMapper<'_> {
             .map(|lock| lock.amount as DeltaSize)
             .sum();
 
-        let reserved_after: DeltaSize =
-            <pallet_balances::Pallet<Runtime>>::reserved_balance(&origin)
-                .try_into()
-                .unwrap();
+        let reserved_after: DeltaSize = <pallet_balances::Pallet<Runtime>>::reserved_balance(&origin)
+            .try_into()
+            .unwrap();
 
         let extrinsic_name = format!("{:?}", extrinsic);
 
@@ -688,8 +675,8 @@ impl MemoryMapper<'_> {
             if balance_delta != 0 || reserve_delta != 0 || lock_delta != 0 {
                 panic!(
                     "Invariant panic! One of those values are not zero as it should be. \
-                It should not happen since the extrinsic returned an Err(). \
-                Debug values: balance_delta: {}, reserve_delta: {}, lock_delta: {}",
+            It should not happen since the extrinsic returned an Err(). \
+            Debug values: balance_delta: {}, reserve_delta: {}, lock_delta: {}",
                     balance_delta, reserve_delta, lock_delta
                 );
             }
@@ -713,24 +700,13 @@ impl MemoryMapper<'_> {
 impl MapHelper<'_> {
     fn save(&self) {
         let inner_save = || -> std::io::Result<()> {
-            let mut map_file = OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(FILENAME_MEMORY_MAP)?;
+            let mut map_file = OpenOptions::new().create(true).append(true).open(FILENAME_MEMORY_MAP)?;
             // Skip writing if extrinsic_name contains any blocklisted calls
             for (extrinsic_name, extrinsic_infos) in self.mapper.map.iter() {
-                if BLACKLISTED_CALLS
-                    .iter()
-                    .any(|&call| extrinsic_name.contains(call))
-                {
+                if BLACKLISTED_CALLS.iter().any(|&call| extrinsic_name.contains(call)) {
                     continue;
                 }
-                let _ = map_file.write(
-                    &extrinsic_name
-                        .clone()
-                        .add(&extrinsic_infos.to_string())
-                        .into_bytes(),
-                )?;
+                let _ = map_file.write(&extrinsic_name.clone().add(&extrinsic_infos.to_string()).into_bytes())?;
             }
             Ok(())
         };
@@ -784,9 +760,10 @@ impl TryExtrinsic<RuntimeCall, u32> for OmnipoolHandler {
             2 if data.len() > 17 => {
                 let asset = assets[data[0] as usize % assets.len()];
                 let amount = u128::from_ne_bytes(data[1..17].try_into().ok()?);
-                Some(RuntimeCall::Omnipool(
-                    pallet_omnipool::Call::add_liquidity { asset, amount },
-                ))
+                Some(RuntimeCall::Omnipool(pallet_omnipool::Call::add_liquidity {
+                    asset,
+                    amount,
+                }))
             }
             _ => None,
         }
@@ -828,3 +805,4 @@ impl TryExtrinsic<RuntimeCall, u32> for StableswapHandler {
         }
     }
 }
+
