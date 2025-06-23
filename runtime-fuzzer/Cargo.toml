@@ -16,14 +16,14 @@ serde = { version = "1.0.193", features = ["derive"] }
 toml = "0.5"
 quinn-proto = { version = "0.9.6", features = ["arbitrary"] }
 
-hydradx-runtime = { path = "../../hydradx-node/runtime/hydradx" }
-hydradx-traits = { path = "../../hydradx-node/traits" }
-primitives = { path = "../../hydradx-node/primitives" }
-scraper = { path = "../../hydradx-node/scraper" }
-runtime-mock = { path = "../../hydradx-node/runtime-mock" }
-pallet-asset-registry = { path = "../../hydradx-node/pallets/asset-registry" }
-pallet-omnipool = { path = "../../hydradx-node/pallets/omnipool" }
-pallet-stableswap = { path = "../../hydradx-node/pallets/stableswap" }
+hydradx-runtime = { path = "../../hydration-node/runtime/hydradx" }
+hydradx-traits = { path = "../../hydration-node/traits" }
+primitives = { path = "../../hydration-node/primitives" }
+scraper = { path = "../../hydration-node/scraper" }
+runtime-mock = { path = "../../hydration-node/runtime-mock" }
+pallet-asset-registry = { path = "../../hydration-node/pallets/asset-registry" }
+pallet-omnipool = { path = "../../hydration-node/pallets/omnipool" }
+pallet-stableswap = { path = "../../hydration-node/pallets/stableswap" }
 
 codec = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 
