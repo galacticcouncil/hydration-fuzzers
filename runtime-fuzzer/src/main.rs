@@ -16,6 +16,7 @@ use sp_runtime::{
     Digest, DigestItem,
 };
 use std::path::PathBuf;
+use frame_support::traits::{StorageInfo, StorageInfoTrait};
 #[cfg(feature = "deprecated-substrate")]
 use {frame_support::weights::constants::WEIGHT_PER_SECOND as WEIGHT_REF_TIME_PER_SECOND, sp_runtime::traits::Zero};
 
@@ -141,6 +142,65 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
     None
 }
 
+fn get_storage_prefixes_to_copy() -> Vec<Vec<u8>>{
+    let info: Vec<Vec<StorageInfo>> = vec![
+        pallet_omnipool::Pallet::<FuzzedRuntime>::storage_info(),
+        pallet_asset_registry::Pallet::<FuzzedRuntime>::storage_info(),
+        pallet_stableswap::Pallet::<FuzzedRuntime>::storage_info(),
+        pallet_ema_oracle::Pallet::<FuzzedRuntime>::storage_info(),
+        pallet_dynamic_fees::Pallet::<FuzzedRuntime>::storage_info(),
+        pallet_evm::Pallet::<FuzzedRuntime>::storage_info(),
+    ];
+    let exclude = vec!["Omnipool:Positions"];
+    let mut result = vec![];
+    for i in info {
+        for entry in i {
+            let  pallet_name= entry.pallet_name;
+            let storagE_name = entry.storage_name;
+            let name = format!("{}:{}", String::from_utf8_lossy(&pallet_name), String::from_utf8_lossy(&storagE_name));
+            println!("name: {:?}", name);
+            if !exclude.contains(&name.as_str()){
+                let prefix = entry.prefix;
+                result.push(prefix.clone());
+            }else{
+                println!("excluded: {:?}", name);
+            }
+        }
+    }
+    result
+}
+
+pub fn get_storage_under_prefix(
+    ext: &mut RemoteExternalities<hydradx_runtime::Block>,
+    prefix: &[u8],
+) -> Vec<(Vec<u8>, Vec<u8>)> {
+    let mut result = Vec::new();
+
+    ext.execute_with(|| {
+        let mut key = prefix.to_vec();
+
+        loop {
+            match sp_io::storage::next_key(&key) {
+                Some(next_key) => {
+                    // Check if key still belongs to our prefix
+                    if !next_key.starts_with(prefix) {
+                        break;
+                    }
+
+                    key = next_key.clone();
+
+                    if let Some(value) = sp_io::storage::get(&key) {
+                        result.push((key.clone(), value.to_vec()));
+                    }
+                }
+                None => break,
+            }
+        }
+    });
+
+    result
+}
+
 pub fn main() {
     // We ensure that on each run, the mapping is a fresh one
     #[cfg(not(any(fuzzing, coverage)))]
@@ -148,8 +208,59 @@ pub fn main() {
         // println!("Can't remove the map file, but it's not a problem.");
     }
 
-    // Create SNAPSHOT from runtime_mock state
-    let mocked_externalities = hydradx_mocked_runtime();
+    let mut mocked_externalities = hydradx_mocked_runtime();
+    let mut ext_omnipool = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            use frame_remote_externalities::*;
+
+            let snapshot_config = SnapshotConfig::from(String::from("data/OMNIPOOL"));
+            let offline_config = OfflineConfig {
+                state_snapshot: snapshot_config,
+            };
+            let mode = Mode::Offline(offline_config);
+
+            let builder = Builder::<hydradx_runtime::Block>::new().mode(mode);
+
+            builder.build().await.unwrap()
+        });
+
+    let prefixes = get_storage_prefixes_to_copy();
+
+    let mut storage_pairs = vec![];
+    for prefix in prefixes {
+        let r = get_storage_under_prefix(&mut ext_omnipool, &prefix);
+        storage_pairs.extend(r);
+    }
+    mocked_externalities.execute_with(||{
+        for (key, value) in storage_pairs{
+            sp_io::storage::set(&key, &value );
+        }
+    });
+    mocked_externalities.commit_all().unwrap();
+    mocked_externalities.execute_with(|| {
+        let assets = pallet_omnipool::Assets::<FuzzedRuntime>::iter_keys();
+        for a in assets {
+            let asset = pallet_omnipool::Assets::<FuzzedRuntime>::get(a);
+            //println!("{:?}: {:?}", a, asset);
+        }
+
+        let registry = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
+        for r in registry {
+            let asset = pallet_asset_registry::Assets::<FuzzedRuntime>::get(r);
+            //println!("{:?}: {:?}", r, asset);
+        }
+
+        let pools = pallet_stableswap::Pools::<FuzzedRuntime>::iter_keys();
+        for r in pools {
+            let asset = pallet_stableswap::Pools::<FuzzedRuntime>::get(r);
+            //println!("{:?}: {:?}", r, asset);
+        }
+
+    });
+
     let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
     scraper::save_externalities::<hydradx_runtime::Block>(mocked_externalities, snapshot_path).unwrap();
 
@@ -172,18 +283,8 @@ pub fn main() {
         let mut block_count = 0;
         let mut extrinsics_in_block = 0;
 
-        // We need to load snapshot first to obtain list of registereted assets
-        // This might be a bit unnecessary, especially if there is not valid extrinsic in the input
-        // TODO: consider reordering the code to avoid this and retrieve list of assets another way
-
-        // `externalities` represents the state of our mock chain.
         let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
-        let mut externalities;
-        if let Ok(snapshot) = scraper::load_snapshot::<Block>(snapshot_path) {
-            externalities = snapshot;
-        } else {
-            externalities = hydradx_mocked_runtime();
-        }
+        let mut externalities = scraper::load_snapshot::<Block>(snapshot_path).expect("Failed to load snapshot");
 
         // load AssetIds
         let mut assets: Vec<u32> = Vec::new();
@@ -483,6 +584,9 @@ use std::{
     ops::Add,
     time::{Duration, Instant},
 };
+use frame_remote_externalities::RemoteExternalities;
+use frame_support::StoragePrefixedMap;
+use sp_io::TestExternalities;
 
 /// A type to represent a big integer. This is mainly used to avoid overflow
 #[cfg(not(any(fuzzing, coverage)))]

@@ -15,6 +15,7 @@ static_init =  "=1.0.3"
 serde = { version = "1.0.193", features = ["derive"] }
 toml = "0.5"
 quinn-proto = { version = "0.9.6", features = ["arbitrary"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 hydradx-runtime = { path = "../../hydration-node/runtime/hydradx" }
 hydradx-traits = { path = "../../hydration-node/traits" }
@@ -24,12 +25,15 @@ runtime-mock = { path = "../../hydration-node/runtime-mock" }
 pallet-asset-registry = { path = "../../hydration-node/pallets/asset-registry" }
 pallet-omnipool = { path = "../../hydration-node/pallets/omnipool" }
 pallet-stableswap = { path = "../../hydration-node/pallets/stableswap" }
+pallet-ema-oracle = { path = "../../hydration-node/pallets/ema-oracle" }
+pallet-dynamic-fees = { path = "../../hydration-node/pallets/dynamic-fees" }
 
 codec = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 
 frame-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "backport-7437-to-patch4", default-features = false }
 frame-support = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "backport-7437-to-patch4", default-features = false }
 frame-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "backport-7437-to-patch4", default-features = false }
+frame-remote-externalities= { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "backport-7437-to-patch4", default-features = false }
 
 sp-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "backport-7437-to-patch4", default-features = false }
 sp-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "backport-7437-to-patch4", default-features = false }
@@ -50,6 +54,8 @@ pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch
 pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "backport-7437-to-patch4", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "backport-7437-to-patch4", default-features = false }
 pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "backport-7437-to-patch4", default-features = false }
+
+pallet-evm = { git = "https://github.com/moonbeam-foundation/frontier", branch = "moonbeam-polkadot-stable2409", default-features = false }
 
 [features]
 default = ["std", "try-runtime"]
