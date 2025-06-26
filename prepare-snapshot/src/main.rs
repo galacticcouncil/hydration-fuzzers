@@ -3,12 +3,8 @@ mod accounts;
 use std::collections::HashMap;
 use codec::{DecodeLimit, Encode};
 use hydradx_runtime::*;
-use primitives::constants::time::SLOT_DURATION;
-use runtime_mock::hydradx_mocked_runtime;
-use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
 use sp_runtime::{
     traits::{Dispatchable, Header},
-    Digest, DigestItem,
 };
 use std::path::PathBuf;
 use frame_support::traits::{StorageInfo, StorageInfoTrait};
@@ -266,6 +262,29 @@ fn load_native_balances(ext: &mut RemoteExternalities<hydradx_runtime::Block>) -
     result
 }
 
+fn endow_native_accounts() -> Vec<(AccountId, Balance)>{
+    let mut result = vec![];
+    let accounts = get_fuzzer_accounts();
+    for acc in &accounts {
+        result.push((acc.clone(), 1_000_000_000_000_000_000u128));
+    }
+    result
+}
+
+fn endow_nonnative_accounts(assets_ids: Vec<(AssetId, u8)>) -> Vec<(AccountId, AssetId, Balance)>{
+    let mut result = vec![];
+    let accounts = get_fuzzer_accounts();
+
+    for (asset_id, decimals) in assets_ids {
+        for acc in &accounts {
+            let balance = 1_000_000 * 10u128.pow(decimals as u32);
+            result.push((acc.clone(), asset_id, balance));
+        }
+    }
+
+    result
+}
+
 pub fn main() {
     let mut ext_mainnet = tokio::runtime::Builder::new_current_thread()
         .enable_all()
@@ -289,11 +308,13 @@ pub fn main() {
     let registry_state = load_registry_state(&mut ext_mainnet);
     let mut nonnative_balances = load_balances_for_important_accounts(&mut ext_mainnet, registry_state.keys().cloned().collect());
     let pool_balances = load_pools_balances(&mut ext_mainnet, registry_state.keys().cloned().collect());
+    let fuzzer_funded_accounts = endow_nonnative_accounts(registry_state.iter().map(|(k,v)| (*k, *v)).collect());
     nonnative_balances.extend(pool_balances);
-    println!("nonnative_balances: {:?}", nonnative_balances.clone());
-    let native_balances = load_native_balances(&mut ext_mainnet);
-    //println!("native_balances: {:?}", native_balances);
+    nonnative_balances.extend(fuzzer_funded_accounts);
 
+    let mut native_balances = load_native_balances(&mut ext_mainnet);
+    let fuzzer_funded_accounts = endow_native_accounts();
+    native_balances.extend(fuzzer_funded_accounts);
 
     // Copy storage
     let prefixes = get_storage_prefixes_to_copy();
@@ -303,9 +324,7 @@ pub fn main() {
         storage_pairs.extend(r);
     }
 
-
     let mut mocked_externalities = genesis_storage(nonnative_balances, native_balances, registry_state.keys().cloned().collect());
-    println!("boom");
     mocked_externalities.execute_with(|| {
         for (key, value) in storage_pairs {
             sp_io::storage::set(&key, &value);
@@ -316,13 +335,13 @@ pub fn main() {
         let assets = pallet_omnipool::Assets::<FuzzedRuntime>::iter_keys();
         for a in assets {
             let asset = pallet_omnipool::Assets::<FuzzedRuntime>::get(a);
-            println!("{:?}: {:?}", a, asset);
+            //println!("{:?}: {:?}", a, asset);
         }
 
         let registry = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
         for r in registry {
             let asset = pallet_asset_registry::Assets::<FuzzedRuntime>::get(r);
-            //println!("{:?}: {:?}", r, asset);
+            println!("{:?}: {:?}", r, asset);
         }
 
         let pools = pallet_stableswap::Pools::<FuzzedRuntime>::iter_keys();
@@ -340,7 +359,4 @@ pub fn main() {
 
     let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
     scraper::save_externalities::<hydradx_runtime::Block>(mocked_externalities, snapshot_path).unwrap();
-
-    // List of accounts to choose as origin
-    let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 }
