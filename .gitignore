@@ -1,7 +1,7 @@
 **/target/
 
 runtime-fuzzer/current_crashes/*
-runtime-fuzzer/data/MOCK_SNAPSHOT
+#runtime-fuzzer/data/MOCK_SNAPSHOT
 runtime-fuzzer/minimized/*
 runtime-fuzzer/output/*
 runtime-fuzzer/output.old/*
