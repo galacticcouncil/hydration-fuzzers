@@ -16,6 +16,8 @@ use sp_runtime::{
 };
 use std::path::PathBuf;
 use frame_support::traits::{StorageInfo, StorageInfoTrait};
+use tempfile::NamedTempFile;
+use std::io::Write;
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
@@ -141,6 +143,14 @@ pub fn main() {
         // println!("Can't remove the map file, but it's not a problem.");
     }
 
+    let original_data =std::fs::read(SNAPSHOT_PATH).unwrap();
+
+    let mut temp_file = NamedTempFile::new().unwrap();
+    temp_file.write_all(&original_data).unwrap();
+
+    // Get the path to pass to the library
+    let temp_path = temp_file.path();
+
     ziggy::fuzz!(|data: &[u8]| {
         let iteratable = Data {
             data,
@@ -154,7 +164,7 @@ pub fn main() {
         let mut block_count = 0;
         let mut extrinsics_in_block = 0;
 
-        let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
+        let snapshot_path = PathBuf::from(temp_path);
         let mut externalities = scraper::load_snapshot::<Block>(snapshot_path).expect("Failed to load snapshot");
 
         // load AssetIds

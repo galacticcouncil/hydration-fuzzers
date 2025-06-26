@@ -11,6 +11,7 @@ repository = "https://github.com/galacticcouncil/hydration-fuzzers"
 [dependencies]
 ziggy = { version = "=1.2.1", default-features = false }
 stats_alloc = "0.1.1"
+tempfile = "3.20.0"
 static_init =  "=1.0.3"
 serde = { version = "1.0.193", features = ["derive"] }
 toml = "0.5"
