@@ -2,7 +2,6 @@ use codec::{DecodeLimit, Encode};
 #[cfg(all(not(feature = "deprecated-substrate"), feature = "try-runtime"))]
 #[allow(unused_imports)]
 use frame_support::traits::{TryState, TryStateSelect};
-#[cfg(not(feature = "deprecated-substrate"))]
 use frame_support::{
     dispatch::GetDispatchInfo, pallet_prelude::Weight, traits::IntegrityTest,
     weights::constants::WEIGHT_REF_TIME_PER_SECOND,
@@ -17,16 +16,9 @@ use sp_runtime::{
 };
 use std::path::PathBuf;
 use frame_support::traits::{StorageInfo, StorageInfoTrait};
-#[cfg(feature = "deprecated-substrate")]
-use {frame_support::weights::constants::WEIGHT_PER_SECOND as WEIGHT_REF_TIME_PER_SECOND, sp_runtime::traits::Zero};
 
-/// Types from the fuzzed runtime.
 type FuzzedRuntime = hydradx_runtime::Runtime;
-
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
-#[cfg(feature = "deprecated-substrate")]
-type RuntimeOrigin = <FuzzedRuntime as frame_system::Config>::Origin;
-#[cfg(not(feature = "deprecated-substrate"))]
 type RuntimeOrigin = <FuzzedRuntime as frame_system::Config>::RuntimeOrigin;
 type AccountId = <FuzzedRuntime as frame_system::Config>::AccountId;
 
@@ -142,130 +134,12 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
     None
 }
 
-fn get_storage_prefixes_to_copy() -> Vec<Vec<u8>>{
-    let info: Vec<Vec<StorageInfo>> = vec![
-        pallet_omnipool::Pallet::<FuzzedRuntime>::storage_info(),
-        pallet_asset_registry::Pallet::<FuzzedRuntime>::storage_info(),
-        pallet_stableswap::Pallet::<FuzzedRuntime>::storage_info(),
-        pallet_ema_oracle::Pallet::<FuzzedRuntime>::storage_info(),
-        pallet_dynamic_fees::Pallet::<FuzzedRuntime>::storage_info(),
-        pallet_evm::Pallet::<FuzzedRuntime>::storage_info(),
-    ];
-    let exclude = vec!["Omnipool:Positions"];
-    let mut result = vec![];
-    for i in info {
-        for entry in i {
-            let  pallet_name= entry.pallet_name;
-            let storagE_name = entry.storage_name;
-            let name = format!("{}:{}", String::from_utf8_lossy(&pallet_name), String::from_utf8_lossy(&storagE_name));
-            println!("name: {:?}", name);
-            if !exclude.contains(&name.as_str()){
-                let prefix = entry.prefix;
-                result.push(prefix.clone());
-            }else{
-                println!("excluded: {:?}", name);
-            }
-        }
-    }
-    result
-}
-
-pub fn get_storage_under_prefix(
-    ext: &mut RemoteExternalities<hydradx_runtime::Block>,
-    prefix: &[u8],
-) -> Vec<(Vec<u8>, Vec<u8>)> {
-    let mut result = Vec::new();
-
-    ext.execute_with(|| {
-        let mut key = prefix.to_vec();
-
-        loop {
-            match sp_io::storage::next_key(&key) {
-                Some(next_key) => {
-                    // Check if key still belongs to our prefix
-                    if !next_key.starts_with(prefix) {
-                        break;
-                    }
-
-                    key = next_key.clone();
-
-                    if let Some(value) = sp_io::storage::get(&key) {
-                        result.push((key.clone(), value.to_vec()));
-                    }
-                }
-                None => break,
-            }
-        }
-    });
-
-    result
-}
-
 pub fn main() {
     // We ensure that on each run, the mapping is a fresh one
     #[cfg(not(any(fuzzing, coverage)))]
     if std::fs::remove_file(FILENAME_MEMORY_MAP).is_err() {
         // println!("Can't remove the map file, but it's not a problem.");
     }
-
-    let mut mocked_externalities = hydradx_mocked_runtime();
-    let mut ext_omnipool = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            use frame_remote_externalities::*;
-
-            let snapshot_config = SnapshotConfig::from(String::from("data/OMNIPOOL"));
-            let offline_config = OfflineConfig {
-                state_snapshot: snapshot_config,
-            };
-            let mode = Mode::Offline(offline_config);
-
-            let builder = Builder::<hydradx_runtime::Block>::new().mode(mode);
-
-            builder.build().await.unwrap()
-        });
-
-    let prefixes = get_storage_prefixes_to_copy();
-
-    let mut storage_pairs = vec![];
-    for prefix in prefixes {
-        let r = get_storage_under_prefix(&mut ext_omnipool, &prefix);
-        storage_pairs.extend(r);
-    }
-    mocked_externalities.execute_with(||{
-        for (key, value) in storage_pairs{
-            sp_io::storage::set(&key, &value );
-        }
-    });
-    mocked_externalities.commit_all().unwrap();
-    mocked_externalities.execute_with(|| {
-        let assets = pallet_omnipool::Assets::<FuzzedRuntime>::iter_keys();
-        for a in assets {
-            let asset = pallet_omnipool::Assets::<FuzzedRuntime>::get(a);
-            //println!("{:?}: {:?}", a, asset);
-        }
-
-        let registry = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
-        for r in registry {
-            let asset = pallet_asset_registry::Assets::<FuzzedRuntime>::get(r);
-            //println!("{:?}: {:?}", r, asset);
-        }
-
-        let pools = pallet_stableswap::Pools::<FuzzedRuntime>::iter_keys();
-        for r in pools {
-            let asset = pallet_stableswap::Pools::<FuzzedRuntime>::get(r);
-            //println!("{:?}: {:?}", r, asset);
-        }
-
-    });
-
-    let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
-    scraper::save_externalities::<hydradx_runtime::Block>(mocked_externalities, snapshot_path).unwrap();
-
-    // List of accounts to choose as origin
-    let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
     ziggy::fuzz!(|data: &[u8]| {
         let iteratable = Data {
@@ -275,9 +149,6 @@ pub fn main() {
         };
 
         // Max weight for a block.
-        #[cfg(feature = "deprecated-substrate")]
-        let max_weight: Weight = WEIGHT_REF_TIME_PER_SECOND * 2;
-        #[cfg(not(feature = "deprecated-substrate"))]
         let max_weight: Weight = Weight::from_parts(WEIGHT_REF_TIME_PER_SECOND * 2, 0);
 
         let mut block_count = 0;
@@ -295,6 +166,9 @@ pub fn main() {
                 assets.push(asset_id);
             }
         });
+
+        // List of accounts to choose as origin
+        let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
         let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
             .filter_map(|data| {
