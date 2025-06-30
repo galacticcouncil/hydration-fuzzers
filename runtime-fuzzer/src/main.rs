@@ -247,7 +247,7 @@ pub fn main() {
 
         let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
         .expect("Time went backwards")
-        .as_secs();
+        .as_millis().try_into().expect("time as u64");
 
         let mut current_block: u32 = 8_134_892;
         let mut current_timestamp: u64 = now;
