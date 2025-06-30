@@ -11,6 +11,7 @@ use frame_support::traits::{StorageInfo, StorageInfoTrait};
 use frame_remote_externalities::RemoteExternalities;
 use hydradx_runtime::Tokens;
 use orml_traits::MultiCurrency;
+use pallet_asset_registry::AssetDetails;
 use primitives::constants::currency::UNITS;
 use sp_core::storage::Storage;
 use sp_io::TestExternalities;
@@ -87,9 +88,9 @@ pub fn get_storage_under_prefix(
     result
 }
 
-fn genesis_storage(nonnative_balances : Vec<(AccountId, AssetId, Balance)>, native_balances: Vec<(AccountId,Balance)>, assets: Vec<AssetId>) -> TestExternalities {
+fn genesis_storage(nonnative_balances : Vec<(AccountId, AssetId, Balance)>, native_balances: Vec<(AccountId,Balance)>, assets: &RegistryState) -> TestExternalities {
     // ensure asset ids are unique
-    let mut asset_ids = assets.clone();
+    let mut asset_ids = assets.iter().map(|x| x.0).collect::<Vec<_>>();
     asset_ids.sort();
     asset_ids.dedup();
 
@@ -182,22 +183,30 @@ fn genesis_storage(nonnative_balances : Vec<(AccountId, AssetId, Balance)>, nati
 
 }
 
-fn load_registry_state(ext: &mut RemoteExternalities<hydradx_runtime::Block>) -> HashMap<AssetId, u8>{
-    let mut result= HashMap::new();
+fn load_registry_state(ext: &mut RemoteExternalities<hydradx_runtime::Block>) -> Vec<(AssetId, AssetDetails<<FuzzedRuntime as  pallet_asset_registry::Config>::StringLimit>)>{
+    let mut result= vec![];
     ext.execute_with(|| {
         let registry = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
         for r in registry {
             let asset = pallet_asset_registry::Assets::<FuzzedRuntime>::get(r).expect("asset not found");
-            result.insert(r, asset.decimals.unwrap_or(18));
+            if !asset.is_sufficient {
+                continue;
+            }
+            if asset.decimals.is_none(){
+                continue;
+            }
+            result.push((r, asset));
         }
     });
     result
 }
 
-fn load_account_balance(ext: &mut RemoteExternalities<hydradx_runtime::Block>, account: AccountId, asset_ids: &[AssetId]) -> Vec<(AccountId, AssetId, Balance)>{
+type RegistryState = Vec<(AssetId, AssetDetails<<FuzzedRuntime as pallet_asset_registry::Config>::StringLimit>)>;
+
+fn load_account_balance(ext: &mut RemoteExternalities<hydradx_runtime::Block>, account: AccountId, asset_ids: &RegistryState) -> Vec<(AccountId, AssetId, Balance)>{
     let mut result = vec![];
     ext.execute_with(|| {
-        for asset_id in asset_ids {
+        for (asset_id, _) in asset_ids {
             let balance = Tokens::free_balance(*asset_id, &account);
             if balance > 0 {
                 result.push((account.clone(), *asset_id, balance));
@@ -207,7 +216,7 @@ fn load_account_balance(ext: &mut RemoteExternalities<hydradx_runtime::Block>, a
     result
 }
 
-fn load_balances_for_important_accounts(ext: &mut RemoteExternalities<hydradx_runtime::Block>, asset_ids: Vec<AssetId>) -> Vec<(AccountId, AssetId, Balance)>{
+fn load_balances_for_important_accounts(ext: &mut RemoteExternalities<hydradx_runtime::Block>, asset_ids: &RegistryState) -> Vec<(AccountId, AssetId, Balance)>{
     let accounts = get_important_accounts();
     let mut result = vec![];
     for acc in &accounts {
@@ -231,11 +240,11 @@ fn get_pool_accounts(ext: &mut RemoteExternalities<hydradx_runtime::Block>) -> V
     result
 }
 
-fn load_pools_balances(ext: &mut RemoteExternalities<hydradx_runtime::Block>, asset_ids: Vec<AssetId>) -> Vec<(AccountId, AssetId, Balance)>{
+fn load_pools_balances(ext: &mut RemoteExternalities<hydradx_runtime::Block>, asset_ids: &RegistryState) -> Vec<(AccountId, AssetId, Balance)>{
     let pool_accounts = get_pool_accounts(ext);
     let mut result = vec![];
     for acc in &pool_accounts {
-        let balances = load_account_balance(ext, acc.clone(), &asset_ids);
+        let balances = load_account_balance(ext, acc.clone(), asset_ids);
         result.extend(
             balances
         )
@@ -271,14 +280,22 @@ fn endow_native_accounts() -> Vec<(AccountId, Balance)>{
     result
 }
 
-fn endow_nonnative_accounts(assets_ids: Vec<(AssetId, u8)>) -> Vec<(AccountId, AssetId, Balance)>{
+fn endow_nonnative_accounts(assets_ids: &RegistryState) -> Vec<(AccountId, AssetId, Balance)>{
     let mut result = vec![];
     let accounts = get_fuzzer_accounts();
 
-    for (asset_id, decimals) in assets_ids {
+    for (asset_id, details) in assets_ids {
         for acc in &accounts {
+            if !details.is_sufficient {
+                continue;
+            }
+            let Some(decimals) = details.decimals else{
+                println!("decimals not set for asset {:?}", asset_id);
+                continue;
+            };
+            let decimals = details.decimals.unwrap();
             let balance = 1_000_000 * 10u128.pow(decimals as u32);
-            result.push((acc.clone(), asset_id, balance));
+            result.push((acc.clone(), *asset_id, balance));
         }
     }
 
@@ -306,9 +323,9 @@ pub fn main() {
 
     // Load balances of some important accounts
     let registry_state = load_registry_state(&mut ext_mainnet);
-    let mut nonnative_balances = load_balances_for_important_accounts(&mut ext_mainnet, registry_state.keys().cloned().collect());
-    let pool_balances = load_pools_balances(&mut ext_mainnet, registry_state.keys().cloned().collect());
-    let fuzzer_funded_accounts = endow_nonnative_accounts(registry_state.iter().map(|(k,v)| (*k, *v)).collect());
+    let mut nonnative_balances = load_balances_for_important_accounts(&mut ext_mainnet, &registry_state);
+    let pool_balances = load_pools_balances(&mut ext_mainnet, &registry_state);
+    let fuzzer_funded_accounts = endow_nonnative_accounts(&registry_state);
     nonnative_balances.extend(pool_balances);
     nonnative_balances.extend(fuzzer_funded_accounts);
 
@@ -324,7 +341,7 @@ pub fn main() {
         storage_pairs.extend(r);
     }
 
-    let mut mocked_externalities = genesis_storage(nonnative_balances, native_balances, registry_state.keys().cloned().collect());
+    let mut mocked_externalities = genesis_storage(nonnative_balances, native_balances, &registry_state);
     mocked_externalities.execute_with(|| {
         for (key, value) in storage_pairs {
             sp_io::storage::set(&key, &value);
@@ -341,7 +358,7 @@ pub fn main() {
         let registry = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
         for r in registry {
             let asset = pallet_asset_registry::Assets::<FuzzedRuntime>::get(r);
-            println!("{:?}: {:?}", r, asset);
+            //println!("{:?}: {:?}", r, asset);
         }
 
         let pools = pallet_stableswap::Pools::<FuzzedRuntime>::iter_keys();
