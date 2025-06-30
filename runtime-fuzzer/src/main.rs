@@ -245,8 +245,12 @@ pub fn main() {
             return;
         }
 
+        let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs();
+
         let mut current_block: u32 = 8_134_892;
-        let mut current_timestamp: u64 = SLOT_DURATION;
+        let mut current_timestamp: u64 = now;
         let mut current_weight: Weight = Weight::zero();
 
         let start_block = |block: u32, current_timestamp: u64| {
