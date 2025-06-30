@@ -245,7 +245,7 @@ pub fn main() {
             return;
         }
 
-        let mut current_block: u32 = 1;
+        let mut current_block: u32 = 8_134_892;
         let mut current_timestamp: u64 = SLOT_DURATION;
         let mut current_weight: Weight = Weight::zero();
 
