@@ -250,7 +250,7 @@ pub fn main() {
         .expect("Time went backwards")
         .as_millis().try_into().expect("time as u64");
 
-        let mut current_block: u32 = 1;
+        let mut current_block: u32 = 8_151_183;
         let mut current_timestamp: u64 = now;
         let mut current_weight: Weight = Weight::zero();
 
@@ -379,7 +379,7 @@ pub fn main() {
                 // We start the next block
                 externalities.execute_with(|| start_block(current_block, current_timestamp));
             }
-            
+
              */
 
             // We get the current time for timing purposes.
