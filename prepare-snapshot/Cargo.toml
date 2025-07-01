@@ -1,5 +1,5 @@
 [package]
-name = "prepare-snaoshot"
+name = "prepare-snapshot"
 version = "0.1.0"
 description = "Tool to prepare snapshot for Hydration Fuzzer"
 authors = ["GalacticCouncil"]
