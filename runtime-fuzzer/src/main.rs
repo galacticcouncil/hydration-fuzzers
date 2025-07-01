@@ -364,6 +364,7 @@ pub fn main() {
             }
             // If the lapse is in the range [0, MAX_BLOCK_LAPSE] we finalize the block and
             // initialize a new one.
+            /*
             if let Some(lapse) = maybe_lapse {
                 #[cfg(not(fuzzing))]
                 println!("  lapse:       {:?}", lapse);
@@ -378,6 +379,8 @@ pub fn main() {
                 // We start the next block
                 externalities.execute_with(|| start_block(current_block, current_timestamp));
             }
+            
+             */
 
             // We get the current time for timing purposes.
             #[cfg(not(fuzzing))]
