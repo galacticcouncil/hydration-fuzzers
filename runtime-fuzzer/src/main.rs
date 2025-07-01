@@ -145,11 +145,11 @@ pub fn main() {
 
     let original_data =std::fs::read(SNAPSHOT_PATH).unwrap();
 
-    let mut temp_file = NamedTempFile::new().unwrap();
-    temp_file.write_all(&original_data).unwrap();
+    //let mut temp_file = NamedTempFile::new().unwrap();
+    //temp_file.write_all(&original_data).unwrap();
 
     // Get the path to pass to the library
-    let temp_path = temp_file.path();
+    //let temp_path = temp_file.path();
 
     ziggy::fuzz!(|data: &[u8]| {
         let iteratable = Data {
@@ -164,8 +164,8 @@ pub fn main() {
         let mut block_count = 0;
         let mut extrinsics_in_block = 0;
 
-        let snapshot_path = PathBuf::from(temp_path);
-        let mut externalities = scraper::load_snapshot::<Block>(snapshot_path).expect("Failed to load snapshot");
+        //let snapshot_path = PathBuf::from(temp_path);
+        let mut externalities = scraper::load_snapshot_from_bytes::<Block>(original_data.clone()).expect("Failed to load snapshot");
 
         // load AssetIds
         let mut assets: Vec<u32> = Vec::new();
@@ -249,7 +249,7 @@ pub fn main() {
         .expect("Time went backwards")
         .as_millis().try_into().expect("time as u64");
 
-        let mut current_block: u32 = 8_134_892;
+        let mut current_block: u32 = 0;
         let mut current_timestamp: u64 = now;
         let mut current_weight: Weight = Weight::zero();
 
@@ -364,6 +364,8 @@ pub fn main() {
             // If the lapse is in the range [0, MAX_BLOCK_LAPSE] we finalize the block and
             // initialize a new one.
             if let Some(lapse) = maybe_lapse {
+                #[cfg(not(fuzzing))]
+                println!("  lapse:       {:?}", lapse);
                 // We end the current block
                 externalities.execute_with(|| end_block(current_block));
 

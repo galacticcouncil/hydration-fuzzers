@@ -293,7 +293,6 @@ fn endow_nonnative_accounts(assets_ids: &RegistryState) -> Vec<(AccountId, Asset
                 println!("decimals not set for asset {:?}", asset_id);
                 continue;
             };
-            let decimals = details.decimals.unwrap();
             let balance = 1_000_000 * 10u128.pow(decimals as u32);
             result.push((acc.clone(), *asset_id, balance));
         }
