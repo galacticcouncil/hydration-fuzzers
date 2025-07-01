@@ -43,7 +43,8 @@ const MAX_TIME_FOR_BLOCK: u64 = 6;
 // We do not skip more than DEFAULT_STORAGE_PERIOD to avoid pallet_transaction_storage from
 // panicking on finalize.
 // Set to number of blocks in two months
-const MAX_BLOCK_LAPSE: u32 = 864_000;
+//const MAX_BLOCK_LAPSE: u32 = 864_000;
+const MAX_BLOCK_LAPSE: u32 = 1000;
 
 // Extrinsic delimiter: `********`
 const DELIMITER: [u8; 8] = [42; 8];
@@ -249,7 +250,7 @@ pub fn main() {
         .expect("Time went backwards")
         .as_millis().try_into().expect("time as u64");
 
-        let mut current_block: u32 = 0;
+        let mut current_block: u32 = 1;
         let mut current_timestamp: u64 = now;
         let mut current_weight: Weight = Weight::zero();
 
