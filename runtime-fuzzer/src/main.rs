@@ -770,11 +770,13 @@ impl TryExtrinsic<RuntimeCall, u32> for OmnipoolHandler {
 
 pub struct StableswapHandler;
 
+const POOL_IDS: [u32;4] = [100,101,102,690]; //TODO: get th values from stableswap storage
+
 impl TryExtrinsic<RuntimeCall, u32> for StableswapHandler {
     fn try_extrinsic(&self, identifier: u8, data: &[u8], assets: &[u32]) -> Option<RuntimeCall> {
         match identifier {
             10 if data.len() > 19 => {
-                let pool_id = 100 + data[0] as u32 % 3; //TODO: make as parameter, currently ids of pools are 100,101,102
+                let pool_id = POOL_IDS[data[0] as usize % POOL_IDS.len()];
                 let asset_in = assets[data[1] as usize % assets.len()];
                 let asset_out = assets[data[2] as usize % assets.len()];
                 let amount_in = u128::from_ne_bytes(data[3..19].try_into().ok()?);
@@ -787,7 +789,7 @@ impl TryExtrinsic<RuntimeCall, u32> for StableswapHandler {
                 }))
             }
             11 if data.len() > 19 => {
-                let pool_id = data[0] as u32 % 3; //TODO: make as parameter
+                let pool_id = POOL_IDS[data[0] as usize % POOL_IDS.len()];
                 let asset_in = assets[data[1] as usize % assets.len()];
                 let asset_out = assets[data[2] as usize % assets.len()];
                 let amount_out = u128::from_ne_bytes(data[3..19].try_into().ok()?);
@@ -797,6 +799,18 @@ impl TryExtrinsic<RuntimeCall, u32> for StableswapHandler {
                     asset_out,
                     amount_out,
                     max_sell_amount: u128::MAX,
+                }))
+            }
+            12 if data.len() > 19 => {
+                let pool_id = POOL_IDS[data[0] as usize % POOL_IDS.len()];
+                let asset_id = assets[data[1] as usize % assets.len()];
+                let _asset_out = assets[data[2] as usize % assets.len()];
+                let shares= u128::from_ne_bytes(data[3..19].try_into().ok()?);
+                Some(RuntimeCall::Stableswap(pallet_stableswap::Call::add_liquidity_shares{
+                    pool_id,
+                    shares,
+                    asset_id,
+                    max_asset_amount: u128::MAX,
                 }))
             }
             _ => None,
