@@ -8,7 +8,6 @@ use frame_support::{
 };
 use hydradx_runtime::*;
 use primitives::constants::time::SLOT_DURATION;
-use runtime_mock::hydradx_mocked_runtime;
 use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
 use sp_runtime::{
     traits::{Dispatchable, Header},
@@ -16,7 +15,6 @@ use sp_runtime::{
 };
 use std::path::PathBuf;
 use frame_support::traits::{StorageInfo, StorageInfoTrait};
-use tempfile::NamedTempFile;
 use std::io::Write;
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
@@ -221,12 +219,9 @@ pub fn main() {
     }
 
     let original_data =std::fs::read(SNAPSHOT_PATH).unwrap();
-
-    //let mut temp_file = NamedTempFile::new().unwrap();
-    //temp_file.write_all(&original_data).unwrap();
-
-    // Get the path to pass to the library
-    //let temp_path = temp_file.path();
+    let snapshot = scraper::get_snapshot_from_bytes::<Block>(original_data.clone()).expect("Failed to create snapshot");
+    let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
+    let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
     ziggy::fuzz!(|data: &[u8]| {
         let iteratable = Data {
@@ -241,22 +236,7 @@ pub fn main() {
         let mut block_count = 0;
         let mut extrinsics_in_block = 0;
 
-
-
-        // load AssetIds
-        let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
-        /*
-        externalities.execute_with(|| {
-            // lets assert that the mock is correctly setup, just in case
-            let asset_ids = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
-            for asset_id in asset_ids {
-                assets.push(asset_id);
-            }
-        });
-         */
-
         // List of accounts to choose as origin
-        let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
         let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
             .filter_map(|data| {
@@ -327,7 +307,8 @@ pub fn main() {
         .expect("Time went backwards")
         .as_millis().try_into().expect("time as u64");
 
-        let mut current_block: u32 = 8_151_183;
+        //let mut current_block: u32 = 8_151_183;
+        let mut current_block: u32 = 1;
         let mut current_timestamp: u64 = now;
         let mut current_weight: Weight = Weight::zero();
 
@@ -421,8 +402,7 @@ pub fn main() {
             <AllPalletsWithSystem as TryState<BlockNumber>>::try_state(_block, TryStateSelect::All).unwrap();
         };
 
-        //let snapshot_path = PathBuf::from(temp_path);
-        let mut externalities = scraper::load_snapshot_from_bytes::<Block>(original_data.clone()).expect("Failed to load snapshot");
+        let mut externalities = scraper::create_externalities_from_snapshot::<Block>(&snapshot).expect("Failed to create ext");
 
         #[cfg(not(any(fuzzing, coverage)))]
         let mut mapper = MemoryMapper::new();
