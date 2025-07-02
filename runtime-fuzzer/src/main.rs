@@ -70,6 +70,82 @@ const BLACKLISTED_CALLS: [&str; 9] = [
     "RuntimeCall::Referenda",
 ];
 
+const OMNIPOOL_ASSETS: [u32;73] = [
+        100,
+        1000771,
+        0,
+        10,
+        1001,
+        4,
+        21,
+        28,
+        20,
+        1000198,
+        30,
+        101,
+        34,
+        16,
+        11,
+        1000085,
+        1000099,
+        1000766,
+        14,
+        1006,
+        6,
+        1000796,
+        19,
+        1000795,
+        35,
+        36,
+        31,
+        33,
+        15,
+        1000794,
+        2,
+        13,
+        1002,
+        32,
+        1000745,
+        27,
+        1000625,
+        29,
+        102,
+        1000753,
+        5,
+        18,
+        7,
+        1000624,
+        26,
+        3370,
+        1003,
+        1000190,
+        690,
+        22,
+        1005,
+        24,
+        1000626,
+        8,
+        1000809,
+        1000100,
+        1004,
+        1000767,
+        1000765,
+        1,
+        252525,
+        12,
+        1000081,
+        3,
+        17,
+        25,
+        1000746,
+        69,
+        23,
+        1000851,
+        9,
+        1000752,
+        1000189,
+    ];
+
 struct Data<'a> {
     data: &'a [u8],
     pointer: usize,
@@ -165,11 +241,11 @@ pub fn main() {
         let mut block_count = 0;
         let mut extrinsics_in_block = 0;
 
-        //let snapshot_path = PathBuf::from(temp_path);
-        let mut externalities = scraper::load_snapshot_from_bytes::<Block>(original_data.clone()).expect("Failed to load snapshot");
+
 
         // load AssetIds
-        let mut assets: Vec<u32> = Vec::new();
+        let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
+        /*
         externalities.execute_with(|| {
             // lets assert that the mock is correctly setup, just in case
             let asset_ids = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
@@ -177,6 +253,7 @@ pub fn main() {
                 assets.push(asset_id);
             }
         });
+         */
 
         // List of accounts to choose as origin
         let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
@@ -343,6 +420,9 @@ pub fn main() {
 
             <AllPalletsWithSystem as TryState<BlockNumber>>::try_state(_block, TryStateSelect::All).unwrap();
         };
+
+        //let snapshot_path = PathBuf::from(temp_path);
+        let mut externalities = scraper::load_snapshot_from_bytes::<Block>(original_data.clone()).expect("Failed to load snapshot");
 
         #[cfg(not(any(fuzzing, coverage)))]
         let mut mapper = MemoryMapper::new();
