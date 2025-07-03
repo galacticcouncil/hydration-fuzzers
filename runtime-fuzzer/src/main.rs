@@ -51,7 +51,7 @@ const DELIMITER: [u8; 8] = [42; 8];
 #[cfg(not(fuzzing))]
 const FILENAME_MEMORY_MAP: &str = "memory_map.output";
 
-const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
+const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT_NO_EVM";
 
 // We won't analyse those native Substrate pallets
 #[cfg(not(fuzzing))]
