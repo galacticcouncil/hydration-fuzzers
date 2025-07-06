@@ -363,7 +363,8 @@ pub fn main() {
         for (maybe_lapse, origin, extrinsic) in extrinsics {
             if recursively_find_call(extrinsic.clone(), |call| {
                 matches!(&call, RuntimeCall::XTokens(..))   || 
-                matches!(&call, RuntimeCall::Timestamp(..))  
+                matches!(&call, RuntimeCall::Timestamp(..))  ||
+                matches!(&call, RuntimeCall::ParachainSystem(..))  
             }) {
                 #[cfg(not(fuzzing))]
                 println!("    Skipping because of custom filter");
