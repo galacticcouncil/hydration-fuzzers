@@ -7852,6 +7852,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hydradx-traits",
+ "log",
  "orml-traits",
  "orml-utilities",
  "parity-scale-codec",

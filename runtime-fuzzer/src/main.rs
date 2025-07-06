@@ -176,8 +176,6 @@ pub fn main() {
         let mut block_count = 0;
         let mut extrinsics_in_block = 0;
 
-        // List of accounts to choose as origin
-
         let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
             .filter_map(|data| {
                 // We have reached the limit of block we want to decode
@@ -414,9 +412,16 @@ pub fn main() {
                 #[cfg(not(any(fuzzing, coverage)))]
                 mapper.initialize_extrinsic(origin_account.clone(), format!("{:?}", extrinsic));
 
-                let _res = extrinsic
+                // let's also dispatch as None, but only 15% of the time.
+                let _res = if origin % 100 < 15{
+                    extrinsic
                     .clone()
-                    .dispatch(RuntimeOrigin::signed(origin_account.clone()));
+                    .dispatch(RuntimeOrigin::none())
+                }else{
+                    extrinsic
+                    .clone()
+                    .dispatch(RuntimeOrigin::signed(origin_account.clone()))
+                };
 
                 #[cfg(not(fuzzing))]
                 println!("    result:     {:?}", &_res);

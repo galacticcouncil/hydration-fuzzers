@@ -37,6 +37,7 @@ fn get_storage_prefixes_to_copy() -> Vec<Vec<u8>>{
         pallet_dynamic_fees::Pallet::<FuzzedRuntime>::storage_info(),
         pallet_evm::Pallet::<FuzzedRuntime>::storage_info(),
         pallet_transaction_multi_payment::Pallet::<FuzzedRuntime>::storage_info(),
+        pallet_xyk::Pallet::<FuzzedRuntime>::storage_info(),
     ];
     let exclude = vec!["Omnipool:Positions", "MultiTransactionPayment:AccountCurrencyMap"];
     let mut result = vec![];
