@@ -362,7 +362,8 @@ pub fn main() {
         // Calls that need to be executed in the first block go here
         for (maybe_lapse, origin, extrinsic) in extrinsics {
             if recursively_find_call(extrinsic.clone(), |call| {
-                matches!(&call, RuntimeCall::XTokens(..))
+                matches!(&call, RuntimeCall::XTokens(..))   || 
+                matches!(&call, RuntimeCall::Timestamp(..))  
             }) {
                 #[cfg(not(fuzzing))]
                 println!("    Skipping because of custom filter");
