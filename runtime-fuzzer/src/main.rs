@@ -51,7 +51,7 @@ const DELIMITER: [u8; 8] = [42; 8];
 #[cfg(not(fuzzing))]
 const FILENAME_MEMORY_MAP: &str = "memory_map.output";
 
-const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT_NO_EVM";
+const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
 
 // We won't analyse those native Substrate pallets
 #[cfg(not(fuzzing))]
@@ -68,12 +68,12 @@ const BLACKLISTED_CALLS: [&str; 9] = [
     "RuntimeCall::Referenda",
 ];
 
-const OMNIPOOL_ASSETS: [u32; 73] = [
+const OMNIPOOL_ASSETS: [u32; 74] = [
     100, 1000771, 0, 10, 1001, 4, 21, 28, 20, 1000198, 30, 101, 34, 16, 11, 1000085, 1000099,
     1000766, 14, 1006, 6, 1000796, 19, 1000795, 35, 36, 31, 33, 15, 1000794, 2, 13, 1002, 32,
     1000745, 27, 1000625, 29, 102, 1000753, 5, 18, 7, 1000624, 26, 3370, 1003, 1000190, 690, 22,
     1005, 24, 1000626, 8, 1000809, 1000100, 1004, 1000767, 1000765, 1, 252525, 12, 1000081, 3, 17,
-    25, 1000746, 69, 23, 1000851, 9, 1000752, 1000189,
+    25, 1000746, 69, 23, 1000851, 9, 1000752, 1000189, 1007,
 ];
 
 struct Data<'a> {
@@ -799,15 +799,17 @@ impl TryExtrinsic<RuntimeCall, u32> for OmnipoolHandler {
 
 pub struct StableswapHandler;
 
-const POOL_IDS: [u32; 4] = [100, 101, 102, 690]; //TODO: get th values from stableswap storage
+const POOL_IDS: [u32; 5] = [100, 101, 102, 690, 4200]; //TODO: get th values from stableswap storage
+
+const STABLEPOOL_ASSETS: [u32; 11] = [10, 18, 21, 23, 11, 19, 1007, 1000809, 22, 15, 1001];
 
 impl TryExtrinsic<RuntimeCall, u32> for StableswapHandler {
     fn try_extrinsic(&self, identifier: u8, data: &[u8], assets: &[u32]) -> Option<RuntimeCall> {
         match identifier {
             10 if data.len() > 19 => {
                 let pool_id = POOL_IDS[data[0] as usize % POOL_IDS.len()];
-                let asset_in = assets[data[1] as usize % assets.len()];
-                let asset_out = assets[data[2] as usize % assets.len()];
+                let asset_in = STABLEPOOL_ASSETS[data[1] as usize % STABLEPOOL_ASSETS.len()];
+                let asset_out = STABLEPOOL_ASSETS[data[2] as usize % STABLEPOOL_ASSETS.len()];
                 let amount_in = u128::from_ne_bytes(data[3..19].try_into().ok()?);
                 Some(RuntimeCall::Stableswap(pallet_stableswap::Call::sell {
                     pool_id,
@@ -819,8 +821,8 @@ impl TryExtrinsic<RuntimeCall, u32> for StableswapHandler {
             }
             11 if data.len() > 19 => {
                 let pool_id = POOL_IDS[data[0] as usize % POOL_IDS.len()];
-                let asset_in = assets[data[1] as usize % assets.len()];
-                let asset_out = assets[data[2] as usize % assets.len()];
+                let asset_in = STABLEPOOL_ASSETS[data[1] as usize % STABLEPOOL_ASSETS.len()];
+                let asset_out = STABLEPOOL_ASSETS[data[2] as usize % STABLEPOOL_ASSETS.len()];
                 let amount_out = u128::from_ne_bytes(data[3..19].try_into().ok()?);
                 Some(RuntimeCall::Stableswap(pallet_stableswap::Call::buy {
                     pool_id,
@@ -832,8 +834,8 @@ impl TryExtrinsic<RuntimeCall, u32> for StableswapHandler {
             }
             12 if data.len() > 19 => {
                 let pool_id = POOL_IDS[data[0] as usize % POOL_IDS.len()];
-                let asset_id = assets[data[1] as usize % assets.len()];
-                let _asset_out = assets[data[2] as usize % assets.len()];
+                let asset_id = STABLEPOOL_ASSETS[data[1] as usize % STABLEPOOL_ASSETS.len()];
+                let _asset_out = STABLEPOOL_ASSETS[data[2] as usize % STABLEPOOL_ASSETS.len()];
                 let shares = u128::from_ne_bytes(data[3..19].try_into().ok()?);
                 Some(RuntimeCall::Stableswap(
                     pallet_stableswap::Call::add_liquidity_shares {
