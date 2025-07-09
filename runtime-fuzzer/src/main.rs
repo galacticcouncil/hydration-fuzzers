@@ -55,7 +55,7 @@ const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
 
 // We won't analyse those native Substrate pallets
 #[cfg(not(fuzzing))]
-const BLACKLISTED_CALLS: [&str; 9] = [
+const BLACKLISTED_CALLS: [&str; 8] = [
     "RuntimeCall::System",
     "RuntimeCall::Utility",
     "RuntimeCall::Proxy",
