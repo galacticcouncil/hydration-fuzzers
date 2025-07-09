@@ -9,11 +9,14 @@ license = "Apache 2.0"
 repository = "https://github.com/galacticcouncil/hydration-fuzzers"
 
 [dependencies]
-ziggy = { version = "1.2.1", default-features = false }
+ziggy = { version = "=1.2.1", default-features = false }
 stats_alloc = "0.1.1"
+tempfile = "3.20.0"
+static_init =  "=1.0.3"
 serde = { version = "1.0.193", features = ["derive"] }
 toml = "0.5"
 quinn-proto = { version = "0.9.6", features = ["arbitrary"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 hydradx-runtime = { path = "../../hydration-node/runtime/hydradx" }
 hydradx-traits = { path = "../../hydration-node/traits" }
@@ -23,32 +26,37 @@ runtime-mock = { path = "../../hydration-node/runtime-mock" }
 pallet-asset-registry = { path = "../../hydration-node/pallets/asset-registry" }
 pallet-omnipool = { path = "../../hydration-node/pallets/omnipool" }
 pallet-stableswap = { path = "../../hydration-node/pallets/stableswap" }
+pallet-ema-oracle = { path = "../../hydration-node/pallets/ema-oracle" }
+pallet-dynamic-fees = { path = "../../hydration-node/pallets/dynamic-fees" }
 
 codec = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 
-frame-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-frame-support = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-frame-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
+frame-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+frame-support = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+frame-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+frame-remote-externalities= { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
 
-sp-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-sp-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-sp-io = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-sp-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
+sp-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+sp-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+sp-io = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+sp-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
 
-cumulus-pallet-parachain-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-cumulus-primitives-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-cumulus-primitives-parachain-inherent = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-cumulus-test-relay-sproof-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
+cumulus-pallet-parachain-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+cumulus-primitives-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+cumulus-primitives-parachain-inherent = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+cumulus-test-relay-sproof-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
 
 orml-tokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2409", default-features = false }
 
-pallet-balances = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-pallet-collective = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-pallet-multisig = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
-pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3", default-features = false }
+pallet-balances = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-collective = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-multisig = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+
+pallet-evm = { git = "https://github.com/moonbeam-foundation/frontier", branch = "moonbeam-polkadot-stable2409", default-features = false }
 
 [features]
 default = ["std", "try-runtime"]
@@ -68,313 +76,313 @@ orml-xcm-support = { git = "https://github.com/galacticcouncil/open-runtime-modu
 orml-xtokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2409" }
 
 [patch."https://github.com/moonbeam-foundation/polkadot-sdk"]
-frame-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-benchmarking-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-executive = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-remote-externalities = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-support = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-support-procedural = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-system-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-system-rpc-runtime-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-try-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-metadata-hash-extension = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-arithmetic = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-authority-discovery = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-block-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-genesis-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-blockchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-consensus = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-consensus-babe = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-externalities = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-inherents = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-io = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-keystore = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-npos-elections = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-offchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-offchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-runtime-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-runtime-interface-proc-macro = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-wasm-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-panic-handler = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-database = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-session = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-staking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-std = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-storage = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-tracing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-transaction-pool = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-trie = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-version = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-basic-authorship = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-chain-spec = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-client-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-client-db = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-consensus = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-consensus-grandpa = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-executor = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-keystore = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-network = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-network-sync = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-network-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-rpc-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-telemetry = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-tracing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-transaction-pool = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-transaction-pool-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-sysinfo = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-utils = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-state-machine = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-weights = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-crypto-hashing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+frame-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-benchmarking-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-executive = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-remote-externalities = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-support = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-support-procedural = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-system-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-system-rpc-runtime-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-try-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-metadata-hash-extension = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-arithmetic = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-authority-discovery = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-block-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-genesis-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-blockchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-consensus = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-consensus-babe = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-externalities = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-inherents = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-io = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-keystore = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-npos-elections = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-offchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-offchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-runtime-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-runtime-interface-proc-macro = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-wasm-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-panic-handler = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-database = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-session = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-staking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-std = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-storage = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-tracing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-transaction-pool = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-trie = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-version = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-basic-authorship = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-chain-spec = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-client-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-client-db = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-consensus = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-consensus-grandpa = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-executor = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-keystore = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-network = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-network-sync = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-network-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-rpc-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-telemetry = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-tracing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-transaction-pool = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-transaction-pool-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-sysinfo = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-utils = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-state-machine = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-weights = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-crypto-hashing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
 # Substrate Pallets
-pallet-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-authorship = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-balances = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-collective = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-elections-phragmen = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-identity = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-multisig = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-preimage = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-scheduler = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-session = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-sudo = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-tips = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-transaction-payment-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-treasury = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-uniques = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-im-online = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-message-queue = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-state-trie-migration = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+pallet-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-authorship = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-balances = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-collective = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-elections-phragmen = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-identity = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-multisig = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-preimage = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-scheduler = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-session = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-sudo = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-tips = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-transaction-payment-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-treasury = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-uniques = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-im-online = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-message-queue = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-state-trie-migration = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
-substrate-build-script-utils = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-substrate-frame-rpc-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-substrate-prometheus-endpoint = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-substrate-rpc-client = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-substrate-wasm-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-substrate-state-trie-migration-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+substrate-build-script-utils = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+substrate-frame-rpc-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+substrate-prometheus-endpoint = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+substrate-rpc-client = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+substrate-wasm-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+substrate-state-trie-migration-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
 # Cumulus dependencies
-cumulus-client-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-collator = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-consensus-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-consensus-proposer = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-network = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-pallet-aura-ext = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-pallet-parachain-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-pallet-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-pallet-xcmp-queue = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-primitives-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-primitives-parachain-inherent = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-primitives-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-primitives-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-relay-chain-inprocess-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-relay-chain-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-relay-chain-minimal-node = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-test-relay-sproof-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-collator-selection = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-staging-parachain-info = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-xcm-emulator = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-parachains-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-xcm-runtime-apis = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+cumulus-client-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-collator = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-consensus-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-consensus-proposer = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-network = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-pallet-aura-ext = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-pallet-parachain-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-pallet-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-pallet-xcmp-queue = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-primitives-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-primitives-parachain-inherent = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-primitives-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-primitives-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-relay-chain-inprocess-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-relay-chain-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-relay-chain-minimal-node = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-test-relay-sproof-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-collator-selection = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+staging-parachain-info = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+xcm-emulator = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+parachains-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+xcm-runtime-apis = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
 # Polkadot dependencies
-pallet-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-core-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-parachain = { package = "polkadot-parachain-primitives", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-runtime-parachains = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-xcm = { package = "staging-xcm", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-xcm-builder = { package = "staging-xcm-builder", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-xcm-executor = { package = "staging-xcm-executor", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+pallet-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-core-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-parachain = { package = "polkadot-parachain-primitives", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-runtime-parachains = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+xcm = { package = "staging-xcm", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+xcm-builder = { package = "staging-xcm-builder", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+xcm-executor = { package = "staging-xcm-executor", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
-polkadot-node-core-pvf = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-node-network-protocol = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-node-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-node-subsystem = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-node-subsystem-util = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-overseer = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-runtime-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-statement-table = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-rococo-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-westend-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+polkadot-node-core-pvf = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-node-network-protocol = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-node-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-node-subsystem = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-node-subsystem-util = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-overseer = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-runtime-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-statement-table = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+rococo-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+westend-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
-cumulus-client-pov-recovery = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-pallet-parachain-system-proc-macro = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-relay-chain-rpc-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+cumulus-client-pov-recovery = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-pallet-parachain-system-proc-macro = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-relay-chain-rpc-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
 [patch."https://github.com/paritytech/polkadot-sdk"]
-frame-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-benchmarking-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-executive = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-remote-externalities = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-support = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-support-procedural = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-system-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-system-rpc-runtime-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-try-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-frame-metadata-hash-extension = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-arithmetic = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-authority-discovery = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-block-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-genesis-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-blockchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-consensus = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-consensus-babe = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-externalities = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-inherents = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-io = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-keystore = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-npos-elections = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-offchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-offchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-runtime-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-runtime-interface-proc-macro = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-wasm-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-panic-handler = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-database = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-session = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-staking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-std = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-storage = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-tracing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-transaction-pool = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-trie = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-version = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-basic-authorship = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-chain-spec = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-client-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-client-db = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-consensus = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-consensus-grandpa = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-executor = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-keystore = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-network = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-network-sync = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-network-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-rpc-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-telemetry = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-tracing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-transaction-pool = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-transaction-pool-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-sysinfo = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sc-utils = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-state-machine = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-weights = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-sp-crypto-hashing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+frame-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-benchmarking-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-executive = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-remote-externalities = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-support = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-support-procedural = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-system-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-system-rpc-runtime-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-try-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+frame-metadata-hash-extension = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-arithmetic = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-authority-discovery = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-block-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-genesis-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-blockchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-consensus = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-consensus-babe = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-externalities = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-inherents = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-io = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-keystore = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-npos-elections = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-offchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-offchain = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-runtime-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-runtime-interface-proc-macro = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-wasm-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-panic-handler = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-database = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-session = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-staking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-std = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-storage = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-tracing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-transaction-pool = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-trie = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-version = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-basic-authorship = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-chain-spec = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-client-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-client-db = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-consensus = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-consensus-grandpa = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-executor = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-keystore = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-network = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-network-sync = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-network-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-rpc-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-telemetry = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-tracing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-transaction-pool = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-transaction-pool-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-sysinfo = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sc-utils = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-state-machine = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-weights = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+sp-crypto-hashing = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
 # Substrate Pallets
-pallet-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-authorship = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-balances = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-collective = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-elections-phragmen = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-identity = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-multisig = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-preimage = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-scheduler = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-session = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-sudo = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-tips = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-transaction-payment-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-treasury = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-uniques = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-im-online = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-message-queue = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-state-trie-migration = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+pallet-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-authorship = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-balances = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-collective = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-elections-phragmen = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-identity = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-multisig = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-preimage = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-scheduler = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-session = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-sudo = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-tips = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-transaction-payment-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-transaction-payment-rpc-runtime-api = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-treasury = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-uniques = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-im-online = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-message-queue = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-state-trie-migration = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
-substrate-build-script-utils = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-substrate-frame-rpc-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-substrate-prometheus-endpoint = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-substrate-rpc-client = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-substrate-wasm-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-substrate-state-trie-migration-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+substrate-build-script-utils = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+substrate-frame-rpc-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+substrate-prometheus-endpoint = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+substrate-rpc-client = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+substrate-wasm-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+substrate-state-trie-migration-rpc = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
 # Cumulus dependencies
-cumulus-client-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-collator = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-consensus-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-consensus-proposer = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-network = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-client-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-pallet-aura-ext = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-pallet-parachain-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-pallet-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-pallet-xcmp-queue = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-primitives-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-primitives-parachain-inherent = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-primitives-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-primitives-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-relay-chain-inprocess-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-relay-chain-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-relay-chain-minimal-node = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-test-relay-sproof-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-pallet-collator-selection = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-staging-parachain-info = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-xcm-emulator = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-parachains-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-xcm-runtime-apis = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+cumulus-client-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-collator = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-consensus-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-consensus-proposer = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-network = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-client-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-pallet-aura-ext = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-pallet-parachain-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-pallet-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-pallet-xcmp-queue = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-primitives-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-primitives-parachain-inherent = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-primitives-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-primitives-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-relay-chain-inprocess-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-relay-chain-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-relay-chain-minimal-node = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-test-relay-sproof-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-collator-selection = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+staging-parachain-info = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+xcm-emulator = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+parachains-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+xcm-runtime-apis = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
 # Polkadot dependencies
-pallet-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-core-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-parachain = { package = "polkadot-parachain-primitives", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-runtime-parachains = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-xcm = { package = "staging-xcm", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-xcm-builder = { package = "staging-xcm-builder", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-xcm-executor = { package = "staging-xcm-executor", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+pallet-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-cli = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-core-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-parachain = { package = "polkadot-parachain-primitives", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-runtime-parachains = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-service = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+xcm = { package = "staging-xcm", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+xcm-builder = { package = "staging-xcm-builder", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+xcm-executor = { package = "staging-xcm-executor", git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
-polkadot-node-core-pvf = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-node-network-protocol = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-node-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-node-subsystem = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-node-subsystem-util = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-overseer = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-runtime-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-polkadot-statement-table = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-rococo-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-westend-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+polkadot-node-core-pvf = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-node-network-protocol = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-node-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-node-subsystem = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-node-subsystem-util = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-overseer = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-runtime-common = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+polkadot-statement-table = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+rococo-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+westend-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
-cumulus-client-pov-recovery = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-pallet-parachain-system-proc-macro = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
-cumulus-relay-chain-rpc-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch3" }
+cumulus-client-pov-recovery = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-pallet-parachain-system-proc-macro = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+cumulus-relay-chain-rpc-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }

@@ -1,36 +1,24 @@
-/// hydration fuzzer v2.2.2
-/// Inspired by the harness sent to HydraDX from srlabs.de on 01.11.2023
 use codec::{DecodeLimit, Encode};
+use frame_support::traits::{StorageInfo, StorageInfoTrait};
 #[cfg(all(not(feature = "deprecated-substrate"), feature = "try-runtime"))]
 #[allow(unused_imports)]
 use frame_support::traits::{TryState, TryStateSelect};
-#[cfg(not(feature = "deprecated-substrate"))]
 use frame_support::{
     dispatch::GetDispatchInfo, pallet_prelude::Weight, traits::IntegrityTest,
     weights::constants::WEIGHT_REF_TIME_PER_SECOND,
 };
 use hydradx_runtime::*;
 use primitives::constants::time::SLOT_DURATION;
-use runtime_mock::hydradx_mocked_runtime;
 use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
 use sp_runtime::{
     traits::{Dispatchable, Header},
     Digest, DigestItem,
 };
+use std::io::Write;
 use std::path::PathBuf;
-#[cfg(feature = "deprecated-substrate")]
-use {
-    frame_support::weights::constants::WEIGHT_PER_SECOND as WEIGHT_REF_TIME_PER_SECOND,
-    sp_runtime::traits::Zero,
-};
 
-/// Types from the fuzzed runtime.
 type FuzzedRuntime = hydradx_runtime::Runtime;
-
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
-#[cfg(feature = "deprecated-substrate")]
-type RuntimeOrigin = <FuzzedRuntime as frame_system::Config>::Origin;
-#[cfg(not(feature = "deprecated-substrate"))]
 type RuntimeOrigin = <FuzzedRuntime as frame_system::Config>::RuntimeOrigin;
 type AccountId = <FuzzedRuntime as frame_system::Config>::AccountId;
 
@@ -53,7 +41,8 @@ const MAX_TIME_FOR_BLOCK: u64 = 6;
 // We do not skip more than DEFAULT_STORAGE_PERIOD to avoid pallet_transaction_storage from
 // panicking on finalize.
 // Set to number of blocks in two months
-const MAX_BLOCK_LAPSE: u32 = 864_000;
+//const MAX_BLOCK_LAPSE: u32 = 864_000;
+const MAX_BLOCK_LAPSE: u32 = 1000;
 
 // Extrinsic delimiter: `********`
 const DELIMITER: [u8; 8] = [42; 8];
@@ -77,6 +66,14 @@ const BLACKLISTED_CALLS: [&str; 9] = [
     "RuntimeCall::XTokens",
     "RuntimeCall::Council",
     "RuntimeCall::Referenda",
+];
+
+const OMNIPOOL_ASSETS: [u32; 74] = [
+    100, 1000771, 0, 10, 1001, 4, 21, 28, 20, 1000198, 30, 101, 34, 16, 11, 1000085, 1000099,
+    1000766, 14, 1006, 6, 1000796, 19, 1000795, 35, 36, 31, 33, 15, 1000794, 2, 13, 1002, 32,
+    1000745, 27, 1000625, 29, 102, 1000753, 5, 18, 7, 1000624, 26, 3370, 1003, 1000190, 690, 22,
+    1005, 24, 1000626, 8, 1000809, 1000100, 1004, 1000767, 1000765, 1, 252525, 12, 1000081, 3, 17,
+    25, 1000746, 69, 23, 1000851, 9, 1000752, 1000189, 1007,
 ];
 
 struct Data<'a> {
@@ -150,20 +147,20 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
     None
 }
 
-fn main() {
+pub fn main() {
     // We ensure that on each run, the mapping is a fresh one
     #[cfg(not(any(fuzzing, coverage)))]
     if std::fs::remove_file(FILENAME_MEMORY_MAP).is_err() {
         // println!("Can't remove the map file, but it's not a problem.");
     }
 
-    // Create SNAPSHOT from runtime_mock state
-    let mocked_externalities = hydradx_mocked_runtime();
-    let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
-    scraper::save_externalities::<hydradx_runtime::Block>(mocked_externalities, snapshot_path)
-        .unwrap();
-
-    // List of accounts to choose as origin
+    let original_data = std::fs::read(SNAPSHOT_PATH).unwrap();
+    let snapshot = scraper::get_snapshot_from_bytes::<Block>(original_data)
+        .expect("Failed to create snapshot");
+    let (backend, state_version, root) =
+        scraper::construct_backend_from_snapshot::<Block>(snapshot)
+            .expect("Failed to create backend");
+    let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
     ziggy::fuzz!(|data: &[u8]| {
@@ -174,36 +171,10 @@ fn main() {
         };
 
         // Max weight for a block.
-        #[cfg(feature = "deprecated-substrate")]
-        let max_weight: Weight = WEIGHT_REF_TIME_PER_SECOND * 2;
-        #[cfg(not(feature = "deprecated-substrate"))]
         let max_weight: Weight = Weight::from_parts(WEIGHT_REF_TIME_PER_SECOND * 2, 0);
 
         let mut block_count = 0;
         let mut extrinsics_in_block = 0;
-
-        // We need to load snapshot first to obtain list of registereted assets
-        // This might be a bit unnecessary, especially if there is not valid extrinsic in the input
-        // TODO: consider reordering the code to avoid this and retrieve list of assets another way
-
-        // `externalities` represents the state of our mock chain.
-        let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
-        let mut externalities;
-        if let Ok(snapshot) = scraper::load_snapshot::<Block>(snapshot_path) {
-            externalities = snapshot;
-        } else {
-            externalities = hydradx_mocked_runtime();
-        }
-
-        // load AssetIds
-        let mut assets: Vec<u32> = Vec::new();
-        externalities.execute_with(|| {
-            // lets assert that the mock is correctly setup, just in case
-            let asset_ids = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
-            for asset_id in asset_ids {
-                assets.push(asset_id);
-            }
-        });
 
         let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
             .filter_map(|data| {
@@ -271,8 +242,16 @@ fn main() {
             return;
         }
 
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_millis()
+            .try_into()
+            .expect("time as u64");
+
+        //let mut current_block: u32 = 8_151_183;
         let mut current_block: u32 = 1;
-        let mut current_timestamp: u64 = SLOT_DURATION;
+        let mut current_timestamp: u64 = now;
         let mut current_weight: Weight = Weight::zero();
 
         let start_block = |block: u32, current_timestamp: u64| {
@@ -305,11 +284,28 @@ fn main() {
             .unwrap()
             .unwrap();
 
+            println!("Parachain validation data");
+
             let parachain_validation_data = {
                 use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
 
-                let (relay_storage_root, proof) =
-                    RelayStateSproofBuilder::default().into_state_root_and_proof();
+                let parent_head_data = {
+                    let header = cumulus_primitives_core::relay_chain::Header::new(
+                        block,
+                        sp_core::H256::from_low_u64_be(0),
+                        sp_core::H256::from_low_u64_be(0),
+                        Default::default(),
+                        Default::default(),
+                    );
+                    cumulus_primitives_core::relay_chain::HeadData(header.encode())
+                };
+
+                let mut sproof_builder = RelayStateSproofBuilder::default();
+
+                sproof_builder.para_id = hydradx_runtime::ParachainInfo::get();
+                sproof_builder.included_para_head = Some(parent_head_data.clone());
+
+                let (relay_storage_root, proof) = sproof_builder.into_state_root_and_proof();
 
                 cumulus_pallet_parachain_system::Call::set_validation_data {
                     data: cumulus_primitives_parachain_inherent::ParachainInherentData {
@@ -326,11 +322,15 @@ fn main() {
                 }
             };
 
+            println!("Setting new validation data");
+
             Executive::apply_extrinsic(UncheckedExtrinsic::new_unsigned(
                 RuntimeCall::ParachainSystem(parachain_validation_data),
             ))
             .unwrap()
             .unwrap();
+
+            println!("Setting new validation data done");
 
             // Calls that need to be executed before each block starts (init_calls) go here
         };
@@ -347,14 +347,15 @@ fn main() {
                 .unwrap();
         };
 
+        //let mut externalities = scraper::create_externalities_from_snapshot::<Block>(&snapshot).expect("Failed to create ext");
+        let mut externalities = scraper::create_externalities_with_backend::<Block>(
+            backend.clone(),
+            root,
+            state_version,
+        );
+
         #[cfg(not(any(fuzzing, coverage)))]
         let mut mapper = MemoryMapper::new();
-
-        externalities.execute_with(|| {
-            // lets assert that the mock is correctly setup, just in case
-            let omnipool_asset = pallet_omnipool::Pallet::<FuzzedRuntime>::assets(&0);
-            assert!(omnipool_asset.is_some());
-        });
 
         externalities.execute_with(|| start_block(current_block, current_timestamp));
 
@@ -362,6 +363,8 @@ fn main() {
         for (maybe_lapse, origin, extrinsic) in extrinsics {
             if recursively_find_call(extrinsic.clone(), |call| {
                 matches!(&call, RuntimeCall::XTokens(..))
+                    || matches!(&call, RuntimeCall::Timestamp(..))
+                    || matches!(&call, RuntimeCall::ParachainSystem(..))
             }) {
                 #[cfg(not(fuzzing))]
                 println!("    Skipping because of custom filter");
@@ -369,7 +372,10 @@ fn main() {
             }
             // If the lapse is in the range [0, MAX_BLOCK_LAPSE] we finalize the block and
             // initialize a new one.
+            /*
             if let Some(lapse) = maybe_lapse {
+                #[cfg(not(fuzzing))]
+                println!("  lapse:       {:?}", lapse);
                 // We end the current block
                 externalities.execute_with(|| end_block(current_block));
 
@@ -382,6 +388,8 @@ fn main() {
                 externalities.execute_with(|| start_block(current_block, current_timestamp));
             }
 
+             */
+
             // We get the current time for timing purposes.
             #[cfg(not(fuzzing))]
             println!("  call:       {:?}", extrinsic);
@@ -393,14 +401,6 @@ fn main() {
             });
 
             current_weight = current_weight.saturating_add(call_weight);
-            #[cfg(feature = "deprecated-substrate")]
-            if current_weight >= max_weight {
-                #[cfg(not(fuzzing))]
-                println!("Skipping because of max weight {}", max_weight);
-                continue;
-            }
-
-            #[cfg(not(feature = "deprecated-substrate"))]
             if current_weight.ref_time() >= max_weight.ref_time() {
                 #[cfg(not(fuzzing))]
                 println!("Skipping because of max weight {}", max_weight);
@@ -414,9 +414,14 @@ fn main() {
                 #[cfg(not(any(fuzzing, coverage)))]
                 mapper.initialize_extrinsic(origin_account.clone(), format!("{:?}", extrinsic));
 
-                let _res = extrinsic
-                    .clone()
-                    .dispatch(RuntimeOrigin::signed(origin_account.clone()));
+                // let's also dispatch as None, but only 15% of the time.
+                let _res = if origin % 100 < 15 {
+                    extrinsic.clone().dispatch(RuntimeOrigin::none())
+                } else {
+                    extrinsic
+                        .clone()
+                        .dispatch(RuntimeOrigin::signed(origin_account.clone()))
+                };
 
                 #[cfg(not(fuzzing))]
                 println!("    result:     {:?}", &_res);
@@ -464,8 +469,12 @@ fn main() {
     });
 }
 
+use frame_remote_externalities::RemoteExternalities;
+use frame_support::pallet_prelude::Get;
+use frame_support::StoragePrefixedMap;
 #[cfg(not(any(fuzzing, coverage)))]
 use frame_support::{dispatch::DispatchResultWithPostInfo, traits::Currency};
+use sp_io::TestExternalities;
 #[cfg(not(any(fuzzing, coverage)))]
 use stats_alloc::{StatsAlloc, INSTRUMENTED_SYSTEM};
 #[cfg(not(any(fuzzing, coverage)))]
@@ -688,8 +697,8 @@ impl MemoryMapper<'_> {
             if balance_delta != 0 || reserve_delta != 0 || lock_delta != 0 {
                 panic!(
                     "Invariant panic! One of those values are not zero as it should be. \
-                It should not happen since the extrinsic returned an Err(). \
-                Debug values: balance_delta: {}, reserve_delta: {}, lock_delta: {}",
+            It should not happen since the extrinsic returned an Err(). \
+            Debug values: balance_delta: {}, reserve_delta: {}, lock_delta: {}",
                     balance_delta, reserve_delta, lock_delta
                 );
             }
@@ -795,13 +804,17 @@ impl TryExtrinsic<RuntimeCall, u32> for OmnipoolHandler {
 
 pub struct StableswapHandler;
 
+const POOL_IDS: [u32; 5] = [100, 101, 102, 690, 4200]; //TODO: get th values from stableswap storage
+
+const STABLEPOOL_ASSETS: [u32; 11] = [10, 18, 21, 23, 11, 19, 1007, 1000809, 22, 15, 1001];
+
 impl TryExtrinsic<RuntimeCall, u32> for StableswapHandler {
     fn try_extrinsic(&self, identifier: u8, data: &[u8], assets: &[u32]) -> Option<RuntimeCall> {
         match identifier {
             10 if data.len() > 19 => {
-                let pool_id = 100 + data[0] as u32 % 3; //TODO: make as parameter, currently ids of pools are 100,101,102
-                let asset_in = assets[data[1] as usize % assets.len()];
-                let asset_out = assets[data[2] as usize % assets.len()];
+                let pool_id = POOL_IDS[data[0] as usize % POOL_IDS.len()];
+                let asset_in = STABLEPOOL_ASSETS[data[1] as usize % STABLEPOOL_ASSETS.len()];
+                let asset_out = STABLEPOOL_ASSETS[data[2] as usize % STABLEPOOL_ASSETS.len()];
                 let amount_in = u128::from_ne_bytes(data[3..19].try_into().ok()?);
                 Some(RuntimeCall::Stableswap(pallet_stableswap::Call::sell {
                     pool_id,
@@ -812,9 +825,9 @@ impl TryExtrinsic<RuntimeCall, u32> for StableswapHandler {
                 }))
             }
             11 if data.len() > 19 => {
-                let pool_id = data[0] as u32 % 3; //TODO: make as parameter
-                let asset_in = assets[data[1] as usize % assets.len()];
-                let asset_out = assets[data[2] as usize % assets.len()];
+                let pool_id = POOL_IDS[data[0] as usize % POOL_IDS.len()];
+                let asset_in = STABLEPOOL_ASSETS[data[1] as usize % STABLEPOOL_ASSETS.len()];
+                let asset_out = STABLEPOOL_ASSETS[data[2] as usize % STABLEPOOL_ASSETS.len()];
                 let amount_out = u128::from_ne_bytes(data[3..19].try_into().ok()?);
                 Some(RuntimeCall::Stableswap(pallet_stableswap::Call::buy {
                     pool_id,
@@ -823,6 +836,20 @@ impl TryExtrinsic<RuntimeCall, u32> for StableswapHandler {
                     amount_out,
                     max_sell_amount: u128::MAX,
                 }))
+            }
+            12 if data.len() > 19 => {
+                let pool_id = POOL_IDS[data[0] as usize % POOL_IDS.len()];
+                let asset_id = STABLEPOOL_ASSETS[data[1] as usize % STABLEPOOL_ASSETS.len()];
+                let _asset_out = STABLEPOOL_ASSETS[data[2] as usize % STABLEPOOL_ASSETS.len()];
+                let shares = u128::from_ne_bytes(data[3..19].try_into().ok()?);
+                Some(RuntimeCall::Stableswap(
+                    pallet_stableswap::Call::add_liquidity_shares {
+                        pool_id,
+                        shares,
+                        asset_id,
+                        max_asset_amount: u128::MAX,
+                    },
+                ))
             }
             _ => None,
         }
