@@ -362,9 +362,9 @@ pub fn main() {
         // Calls that need to be executed in the first block go here
         for (maybe_lapse, origin, extrinsic) in extrinsics {
             if recursively_find_call(extrinsic.clone(), |call| {
-                matches!(&call, RuntimeCall::XTokens(..))   || 
-                matches!(&call, RuntimeCall::Timestamp(..))  ||
-                matches!(&call, RuntimeCall::ParachainSystem(..))  
+                matches!(&call, RuntimeCall::XTokens(..))
+                    || matches!(&call, RuntimeCall::Timestamp(..))
+                    || matches!(&call, RuntimeCall::ParachainSystem(..))
             }) {
                 #[cfg(not(fuzzing))]
                 println!("    Skipping because of custom filter");
@@ -415,14 +415,12 @@ pub fn main() {
                 mapper.initialize_extrinsic(origin_account.clone(), format!("{:?}", extrinsic));
 
                 // let's also dispatch as None, but only 15% of the time.
-                let _res = if origin % 100 < 15{
+                let _res = if origin % 100 < 15 {
+                    extrinsic.clone().dispatch(RuntimeOrigin::none())
+                } else {
                     extrinsic
-                    .clone()
-                    .dispatch(RuntimeOrigin::none())
-                }else{
-                    extrinsic
-                    .clone()
-                    .dispatch(RuntimeOrigin::signed(origin_account.clone()))
+                        .clone()
+                        .dispatch(RuntimeOrigin::signed(origin_account.clone()))
                 };
 
                 #[cfg(not(fuzzing))]
