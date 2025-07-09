@@ -128,10 +128,6 @@ fn genesis_storage(nonnative_balances : Vec<(AccountId, AssetId, Balance)>, nati
             balances: BalancesConfig {
                 balances: native_balances,
             },
-            council: CouncilConfig {
-                members: get_council_members(),
-                phantom: Default::default(),
-            },
             technical_committee: TechnicalCommitteeConfig {
                 members: get_technical_committee(),
                 phantom: Default::default(),

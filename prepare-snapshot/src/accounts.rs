@@ -1,9 +1,5 @@
 use crate::FuzzedRuntime;
 
-pub fn get_council_members() -> Vec<primitives::AccountId> {
-    (0..5).map(|i| [i; 32].into()).collect()
-}
-
 pub fn get_technical_committee() -> Vec<primitives::AccountId> {
     (0..3).map(|i| [i; 32].into()).collect()
 }
