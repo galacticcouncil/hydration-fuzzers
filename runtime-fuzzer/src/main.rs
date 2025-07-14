@@ -251,7 +251,7 @@ pub fn main() {
             state_version,
         );
 
-        let dummy_validation_data = polkadot_primitives::ValidationData {
+        let dummy_validation_data = polkadot_primitives::PersistedValidationData {
             parent_head: Default::default(),
             relay_parent_number: 0,
             relay_parent_storage_root: Default::default(),
