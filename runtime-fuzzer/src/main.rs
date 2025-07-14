@@ -13,10 +13,10 @@ use primitives::constants::time::SLOT_DURATION;
 use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
 use sp_core::H256;
 use sp_runtime::{
+    Digest, DigestItem, StateVersion,
     traits::{Dispatchable, Header as _},
-    Digest, DigestItem,
 };
-use std::{collections::BTreeMap, io::Write, path::PathBuf, time::{Duration, Instant}};
+use std::{collections::BTreeMap, io::Write, iter, path::PathBuf, time::{Duration, Instant}};
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
@@ -47,10 +47,6 @@ const MAX_BLOCK_LAPSE: u32 = 1000;
 
 // Extrinsic delimiter: `********`
 const DELIMITER: [u8; 8] = [42; 8];
-
-/// Constants for the fee-memory mapping
-#[cfg(not(feature = "fuzzing"))]
-const FILENAME_MEMORY_MAP: &str = "memory_map.output";
 
 const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
 
@@ -145,101 +141,39 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
 }
 
 pub fn main() {
-    // We ensure that on each run, the mapping is a fresh one
-    #[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
-    if std::fs::remove_file(FILENAME_MEMORY_MAP).is_err() {
-        // println!("Can't remove the map file, but it's not a problem.");
-    }
-
     let original_data = std::fs::read(SNAPSHOT_PATH).unwrap();
     let snapshot = scraper::get_snapshot_from_bytes::<Block>(original_data)
         .expect("Failed to create snapshot");
     let (backend, state_version, root) =
         scraper::construct_backend_from_snapshot::<Block>(snapshot)
             .expect("Failed to create backend");
+
+
+    ziggy::fuzz!(|data: &[u8]| {
+        process_input(backend.clone(), state_version, root, data);
+    });
+}
+
+fn process_input(backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>, state_version: StateVersion, root: H256, data: &[u8]) {
     let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
-    ziggy::fuzz!(|data: &[u8]| {
-        let iteratable = Data {
-            data,
-            pointer: 0,
-            size: 0,
-        };
+    // We build the list of extrinsics we will execute
+    let mut extrinsic_data = data;
 
-        // Max weight for a block.
-        let max_weight: Weight = Weight::from_parts(WEIGHT_REF_TIME_PER_SECOND * 2, 0);
+    let extrinsics: Vec<(u8, u8, RuntimeCall)> =
+        iter::from_fn(|| DecodeLimit::decode_with_depth_limit(64, &mut extrinsic_data).ok())
+            .filter(|(_, _, x): &(_, _, RuntimeCall)| {
+                !recursively_find_call(x.clone(), |call| {
+                    matches!(call.clone(), RuntimeCall::System(_))
+                })
+            }).collect();
 
-        let mut block_count = 0;
-        let mut extrinsics_in_block = 0;
+    if extrinsics.is_empty() {
+        return;
+    }
 
-        let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
-            .filter_map(|data| {
-                // We have reached the limit of block we want to decode
-                #[allow(clippy::absurd_extreme_comparisons)]
-                if MAX_BLOCKS_PER_INPUT != 0 && block_count >= MAX_BLOCKS_PER_INPUT {
-                    return None;
-                }
-                // Min lengths required for the data
-                // - lapse is u32 (4 bytes),
-                // - origin is u16 (2 bytes)
-                // - structured fuzzer (1 byte)
-                // -> 7 bytes minimum
-                let min_data_len = 4 + 2 + 1;
-                if data.len() <= min_data_len {
-                    return None;
-                }
-                let lapse: u32 = u32::from_ne_bytes(data[0..4].try_into().unwrap());
-                let origin: usize = u16::from_ne_bytes(data[4..6].try_into().unwrap()) as usize;
-                let specific_extrinsic: u8 = data[6];
-                let mut encoded_extrinsic: &[u8] = &data[7..];
-
-                // If the lapse is in the range [1, MAX_BLOCK_LAPSE] it is valid.
-                let maybe_lapse = match lapse {
-                    1..=MAX_BLOCK_LAPSE => Some(lapse),
-                    _ => None,
-                };
-                // We have reached the limit of extrinsics for this block
-                #[allow(clippy::absurd_extreme_comparisons)]
-                if maybe_lapse.is_none()
-                    && MAX_EXTRINSICS_PER_BLOCK != 0
-                    && extrinsics_in_block >= MAX_EXTRINSICS_PER_BLOCK
-                {
-                    return None;
-                }
-
-                let maybe_extrinsic = if let Some(extrinsic) =
-                    try_specific_extrinsic(specific_extrinsic, encoded_extrinsic, &assets)
-                {
-                    Ok(extrinsic)
-                } else {
-                    DecodeLimit::decode_all_with_depth_limit(32, &mut encoded_extrinsic)
-                };
-
-                if let Ok(decoded_extrinsic) = maybe_extrinsic {
-                    if maybe_lapse.is_some() {
-                        block_count += 1;
-                        extrinsics_in_block = 1;
-                    } else {
-                        extrinsics_in_block += 1;
-                    }
-                    // We have reached the limit of block we want to decode
-                    if MAX_BLOCKS_PER_INPUT != 0 && block_count >= MAX_BLOCKS_PER_INPUT {
-                        return None;
-                    }
-
-                    Some((maybe_lapse, origin, decoded_extrinsic))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        if extrinsics.is_empty() {
-            return;
-        }
-
-        // Start block
+     // Start block
         // let mut block: u32 = 1;
         let mut block: u32 = 8_338_378;
 
@@ -266,7 +200,7 @@ pub fn main() {
             initialize_block(block, Some(&dummy_header));
 
             // Calls that need to be executed in the first block go here
-            for (maybe_lapse, origin, extrinsic) in extrinsics {
+            for (lapse, origin, extrinsic) in extrinsics {
                 if recursively_find_call(extrinsic.clone(), |call| {
                     matches!(&call, RuntimeCall::XTokens(..))
                         || matches!(&call, RuntimeCall::Timestamp(..))
@@ -276,16 +210,15 @@ pub fn main() {
                     println!("    Skipping because of custom filter");
                     continue;
                 }
-                // If the lapse is in the range [0, MAX_BLOCK_LAPSE] we finalize the block and
-                // initialize a new one.
-                if let Some(lapse) = maybe_lapse {
-                    #[cfg(not(feature = "fuzzing"))]
+                // If lapse is positive, then we finalize the block and initialize a new one.
+                if lapse > 0 {
                     println!("  lapse:       {:?}", lapse);
-                    // We end the current block
+
+                    // Finalize current block
                     let prev_header = finalize_block(elapsed);
 
                     // We update our state variables
-                    block += lapse;
+                    block += u32::from(lapse);
                     weight = Weight::zero();
                     elapsed = Duration::ZERO;
 
@@ -301,7 +234,7 @@ pub fn main() {
                 }
 
                 // We use given list of accounts to choose from, not a random account from the system
-                let origin_account = accounts[origin % accounts.len()].clone();
+                let origin_account = accounts[origin as usize % accounts.len()].clone();
 
                 #[cfg(not(feature = "fuzzing"))]
                 println!("\n    origin:     {origin:?}");
@@ -316,7 +249,7 @@ pub fn main() {
                 } else {
                     extrinsic
                         .clone()
-                        .dispatch(RuntimeOrigin::signed(origin_account.clone()))
+                        .dispatch(RuntimeOrigin::signed(origin_account))
                 };
                 elapsed += now.elapsed();
 
@@ -342,7 +275,6 @@ pub fn main() {
         // println!("Running integrity tests\n");
         // // We run all developer-defined integrity tests
         // <AllPalletsWithSystem as IntegrityTest>::integrity_test();
-    });
 }
 
 fn initialize_block(block: u32, prev_header: Option<&Header>) {

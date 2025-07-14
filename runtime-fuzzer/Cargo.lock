@@ -4812,6 +4812,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-trie",
  "static_init",
  "stats_alloc",
  "tempfile",
