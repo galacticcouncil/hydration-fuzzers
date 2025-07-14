@@ -251,15 +251,16 @@ pub fn main() {
             state_version,
         );
 
-        let dummy_validation_data = polkadot_primitives::PersistedValidationData {
-            parent_head: Default::default(),
-            relay_parent_number: 0,
-            relay_parent_storage_root: Default::default(),
-            max_pov_size: 1_000_000,
+        let dummy_header: Header<u32, BlakeTwo256> = Header {
+            parent_hash: Default::default(),
+            number: block_number,
+            state_root: Default::default(),
+            extrinsics_root: Default::default(),
+            digest: Default::default(),
         };
 
         externalities.execute_with(|| {
-            initialize_block(block, dummy_validation_data);
+            initialize_block(block, dummy_header);
 
             // Calls that need to be executed in the first block go here
             for (maybe_lapse, origin, extrinsic) in extrinsics {
