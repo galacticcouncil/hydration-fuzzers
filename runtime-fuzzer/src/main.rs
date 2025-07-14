@@ -251,8 +251,15 @@ pub fn main() {
             state_version,
         );
 
+        let dummy_validation_data = PersistedValidationData {
+            parent_head: Default::default(),
+            relay_parent_number: 0,
+            relay_parent_storage_root: Default::default(),
+            max_pov_size: 1_000_000,
+        };
+
         externalities.execute_with(|| {
-            initialize_block(block, None);
+            initialize_block(block, dummy_validation_data);
 
             // Calls that need to be executed in the first block go here
             for (maybe_lapse, origin, extrinsic) in extrinsics {
