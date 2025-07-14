@@ -377,7 +377,7 @@ fn initialize_block(block: u32, prev_header: Option<&Header>) {
 
         let parent_head = HeadData(prev_header.unwrap_or(parent_header).encode());
         let sproof_builder = RelayStateSproofBuilder {
-            para_id: 100.into(),
+            para_id: 2_034.into(),
             current_slot: cumulus_primitives_core::relay_chain::Slot::from(2 * u64::from(block)),
             included_para_head: Some(parent_head.clone()),
             ..Default::default()
