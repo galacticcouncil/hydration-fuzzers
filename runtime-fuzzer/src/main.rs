@@ -16,7 +16,7 @@ use sp_runtime::{
     traits::{Dispatchable, Header as _},
     Digest, DigestItem,
 };
-use std::{collections::BTreeMap, io::Write, path::PathBuf};
+use std::{collections::BTreeMap, io::Write, path::PathBuf, time::Duration, Instant};
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
