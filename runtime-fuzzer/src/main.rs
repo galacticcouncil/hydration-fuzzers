@@ -251,9 +251,9 @@ pub fn main() {
             state_version,
         );
 
-        let dummy_header: Header<u32, BlakeTwo256> = Header {
+        let dummy_header: Header = Header {
             parent_hash: Default::default(),
-            number: block_number,
+            number: block,
             state_root: Default::default(),
             extrinsics_root: Default::default(),
             digest: Default::default(),
