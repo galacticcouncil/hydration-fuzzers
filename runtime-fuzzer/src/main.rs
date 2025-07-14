@@ -260,7 +260,7 @@ pub fn main() {
         };
 
         externalities.execute_with(|| {
-            initialize_block(block, dummy_header);
+            initialize_block(block, Some(&dummy_header));
 
             // Calls that need to be executed in the first block go here
             for (maybe_lapse, origin, extrinsic) in extrinsics {
