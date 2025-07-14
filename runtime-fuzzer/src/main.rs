@@ -241,7 +241,7 @@ pub fn main() {
 
         // Start block
         // let mut block: u32 = 1;
-        let mut block: u32 = 8_151_183;
+        let mut block: u32 = 8_338_378;
 
         let mut elapsed: Duration = Duration::ZERO;
         let mut weight: Weight = Weight::zero();
