@@ -16,7 +16,7 @@ use sp_runtime::{
     traits::{Dispatchable, Header as _},
     Digest, DigestItem,
 };
-use std::{collections::BTreeMap, io::Write, path::PathBuf, time::Duration, Instant};
+use std::{collections::BTreeMap, io::Write, path::PathBuf, time::{Duration, Instant}};
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
@@ -36,7 +36,7 @@ const MAX_BLOCKS_PER_INPUT: usize = 32;
 const MAX_EXTRINSICS_PER_BLOCK: usize = 0;
 
 /// Max number of seconds a block should run for.
-#[cfg(not(fuzzing))]
+#[cfg(not(feature = "fuzzing"))]
 const MAX_TIME_FOR_BLOCK: u64 = 6;
 
 // We do not skip more than DEFAULT_STORAGE_PERIOD to avoid pallet_transaction_storage from
@@ -49,13 +49,13 @@ const MAX_BLOCK_LAPSE: u32 = 1000;
 const DELIMITER: [u8; 8] = [42; 8];
 
 /// Constants for the fee-memory mapping
-#[cfg(not(fuzzing))]
+#[cfg(not(feature = "fuzzing"))]
 const FILENAME_MEMORY_MAP: &str = "memory_map.output";
 
 const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
 
 // We won't analyse those native Substrate pallets
-#[cfg(not(fuzzing))]
+#[cfg(not(feature = "fuzzing"))]
 const BLACKLISTED_CALLS: [&str; 8] = [
     "RuntimeCall::System",
     "RuntimeCall::Utility",
@@ -146,7 +146,7 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
 
 pub fn main() {
     // We ensure that on each run, the mapping is a fresh one
-    #[cfg(not(any(fuzzing, coverage)))]
+    #[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
     if std::fs::remove_file(FILENAME_MEMORY_MAP).is_err() {
         // println!("Can't remove the map file, but it's not a problem.");
     }
@@ -261,14 +261,14 @@ pub fn main() {
                         || matches!(&call, RuntimeCall::Timestamp(..))
                         || matches!(&call, RuntimeCall::ParachainSystem(..))
                 }) {
-                    #[cfg(not(fuzzing))]
+                    #[cfg(not(feature = "fuzzing"))]
                     println!("    Skipping because of custom filter");
                     continue;
                 }
                 // If the lapse is in the range [0, MAX_BLOCK_LAPSE] we finalize the block and
                 // initialize a new one.
                 if let Some(lapse) = maybe_lapse {
-                    #[cfg(not(fuzzing))]
+                    #[cfg(not(feature = "fuzzing"))]
                     println!("  lapse:       {:?}", lapse);
                     // We end the current block
                     let prev_header = finalize_block(elapsed);
@@ -309,7 +309,7 @@ pub fn main() {
                 };
                 elapsed += now.elapsed();
 
-                #[cfg(not(fuzzing))]
+                #[cfg(not(feature = "fuzzing"))]
                 println!("    result:     {:?}", &res);
             }
 
@@ -327,7 +327,7 @@ pub fn main() {
             }
         }
 
-        #[cfg(not(fuzzing))]
+        #[cfg(not(feature = "fuzzing"))]
         println!("Running integrity tests\n");
         // We run all developer-defined integrity tests
         <AllPalletsWithSystem as IntegrityTest>::integrity_test();
@@ -402,12 +402,12 @@ fn finalize_block(elapsed: Duration) -> Header {
 
 use frame_remote_externalities::RemoteExternalities;
 use frame_support::{pallet_prelude::Get, StoragePrefixedMap};
-#[cfg(not(any(fuzzing, coverage)))]
+#[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
 use frame_support::{dispatch::DispatchResultWithPostInfo, traits::Currency};
 use sp_io::TestExternalities;
-#[cfg(not(any(fuzzing, coverage)))]
+#[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
 use stats_alloc::{StatsAlloc, INSTRUMENTED_SYSTEM};
-#[cfg(not(any(fuzzing, coverage)))]
+#[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
 use std::{
     alloc::System,
     collections::HashMap,
@@ -415,11 +415,10 @@ use std::{
     fs::OpenOptions,
     io::prelude::*,
     ops::Add,
-    time::{Duration, Instant},
 };
 
 /// A type to represent a big integer. This is mainly used to avoid overflow
-#[cfg(not(any(fuzzing, coverage)))]
+#[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
 type DeltaSize = i128;
 
 /// Represents the different statistics that will be captured during the analysis
@@ -431,7 +430,7 @@ type DeltaSize = i128;
 /// - `lock_delta`: The difference of the locked balance before and after executing an extrinsic
 /// - `memory_delta`: Memory used to execute a specific extrinsic, based on the allocator stats
 /// - `elapsed`: Time spent to execute the extrinsic
-#[cfg(not(any(fuzzing, coverage)))]
+#[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
 #[derive(Copy, Clone, Debug)]
 pub struct MappingData {
     fee: Balance,
@@ -458,7 +457,7 @@ pub struct MappingData {
 /// - `deallocated_before`: A struct holding information about deallocated memory before the
 ///   extrinsic execution.
 /// - `timer`: An optional `Instant` capturing the time before the extrinsic execution starts.
-#[cfg(not(any(fuzzing, coverage)))]
+#[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
 pub struct ExtrinsicInfoSnapshot {
     balance_before: DeltaSize,
     reserved_before: DeltaSize,
@@ -479,7 +478,7 @@ pub struct ExtrinsicInfoSnapshot {
 /// - `snapshot`: Backup of statistics used to calculate deltas
 /// - `extrinsic_name`. Full name of the executed extrinsic with its parameters and origins
 /// - `allocator`. Struct pointing to the memory allocator
-#[cfg(not(any(fuzzing, coverage)))]
+#[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
 pub struct MemoryMapper<'a> {
     map: HashMap<String, MappingData>,
     snapshot: ExtrinsicInfoSnapshot,
@@ -493,12 +492,12 @@ pub struct MemoryMapper<'a> {
 ///
 /// # Fields
 /// - `mapper`: Reference to the `MemoryMapper` instance for which `MapHelper` acts as a helper
-#[cfg(not(any(fuzzing, coverage)))]
+#[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
 pub struct MapHelper<'a> {
     mapper: MemoryMapper<'a>,
 }
 
-#[cfg(not(any(fuzzing, coverage)))]
+#[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
 impl Display for MappingData {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(
@@ -514,7 +513,7 @@ impl Display for MappingData {
     }
 }
 
-#[cfg(not(any(fuzzing, coverage)))]
+#[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
 impl MemoryMapper<'_> {
     fn new() -> Self {
         MemoryMapper {
@@ -533,7 +532,7 @@ impl MemoryMapper<'_> {
     }
 }
 
-#[cfg(not(any(fuzzing, coverage)))]
+#[cfg(not(any(feature = "fuzzing", feature = "coverage")))]
 impl MapHelper<'_> {
     fn save(&self) {
         let inner_save = || -> std::io::Result<()> {
