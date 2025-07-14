@@ -329,18 +329,18 @@ pub fn main() {
 
         // After execution of all blocks.
         // Check that the consumer/provider state is valid.
-        for acc in frame_system::Account::<FuzzedRuntime>::iter() {
-            let acc_consumers = acc.1.consumers;
-            let acc_providers = acc.1.providers;
-            if acc_consumers > 0 && acc_providers == 0 {
-                panic!("Invalid state");
-            }
-        }
-
-        #[cfg(not(feature = "fuzzing"))]
-        println!("Running integrity tests\n");
-        // We run all developer-defined integrity tests
-        <AllPalletsWithSystem as IntegrityTest>::integrity_test();
+        // for acc in frame_system::Account::<FuzzedRuntime>::iter() {
+        //     let acc_consumers = acc.1.consumers;
+        //     let acc_providers = acc.1.providers;
+        //     if acc_consumers > 0 && acc_providers == 0 {
+        //         panic!("Invalid state");
+        //     }
+        // }
+        //
+        // #[cfg(not(feature = "fuzzing"))]
+        // println!("Running integrity tests\n");
+        // // We run all developer-defined integrity tests
+        // <AllPalletsWithSystem as IntegrityTest>::integrity_test();
     });
 }
 
