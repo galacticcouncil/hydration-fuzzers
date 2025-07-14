@@ -1,21 +1,22 @@
+extern crate polkadot_primitives;
+
 use codec::{DecodeLimit, Encode};
+use cumulus_primitives_core::relay_chain::Header;
 use frame_support::traits::{StorageInfo, StorageInfoTrait};
-#[cfg(all(not(feature = "deprecated-substrate"), feature = "try-runtime"))]
-#[allow(unused_imports)]
-use frame_support::traits::{TryState, TryStateSelect};
 use frame_support::{
-    dispatch::GetDispatchInfo, pallet_prelude::Weight, traits::IntegrityTest,
+    dispatch::GetDispatchInfo, pallet_prelude::Weight,
+    traits::{IntegrityTest, TryState, TryStateSelect},
     weights::constants::WEIGHT_REF_TIME_PER_SECOND,
 };
 use hydradx_runtime::*;
 use primitives::constants::time::SLOT_DURATION;
 use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
+use sp_core::H256;
 use sp_runtime::{
-    traits::{Dispatchable, Header},
+    traits::{Dispatchable, Header as _},
     Digest, DigestItem,
 };
-use std::io::Write;
-use std::path::PathBuf;
+use std::{collections::BTreeMap, io::Write, path::PathBuf};
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
@@ -238,110 +239,10 @@ pub fn main() {
             return;
         }
 
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_millis()
-            .try_into()
-            .expect("time as u64");
-
-        //let mut current_block: u32 = 8_151_183;
-        let mut current_block: u32 = 1;
-        let mut current_timestamp: u64 = now;
-        let mut current_weight: Weight = Weight::zero();
-
-        let start_block = |block: u32, current_timestamp: u64| {
-            #[cfg(not(fuzzing))]
-            println!("Initializing block {block}");
-
-            let pre_digest = Digest {
-                logs: vec![DigestItem::PreRuntime(
-                    AURA_ENGINE_ID,
-                    Slot::from(block as u64).encode(),
-                )],
-            };
-
-            Executive::initialize_block(&Header::new(
-                block,
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                pre_digest,
-            ));
-
-            #[cfg(not(fuzzing))]
-            println!("Setting Timestamp");
-            // We apply the timestamp extrinsic for the current block.
-            Executive::apply_extrinsic(UncheckedExtrinsic::new_unsigned(RuntimeCall::Timestamp(
-                pallet_timestamp::Call::set {
-                    now: current_timestamp,
-                },
-            )))
-            .unwrap()
-            .unwrap();
-
-            println!("Parachain validation data");
-
-            let parachain_validation_data = {
-                use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
-
-                let parent_head_data = {
-                    let header = cumulus_primitives_core::relay_chain::Header::new(
-                        block,
-                        sp_core::H256::from_low_u64_be(0),
-                        sp_core::H256::from_low_u64_be(0),
-                        Default::default(),
-                        Default::default(),
-                    );
-                    cumulus_primitives_core::relay_chain::HeadData(header.encode())
-                };
-
-                let mut sproof_builder = RelayStateSproofBuilder::default();
-
-                sproof_builder.para_id = hydradx_runtime::ParachainInfo::get();
-                sproof_builder.included_para_head = Some(parent_head_data.clone());
-
-                let (relay_storage_root, proof) = sproof_builder.into_state_root_and_proof();
-
-                cumulus_pallet_parachain_system::Call::set_validation_data {
-                    data: cumulus_primitives_parachain_inherent::ParachainInherentData {
-                        validation_data: cumulus_primitives_core::PersistedValidationData {
-                            parent_head: Default::default(),
-                            relay_parent_number: block,
-                            relay_parent_storage_root: relay_storage_root,
-                            max_pov_size: Default::default(),
-                        },
-                        relay_chain_state: proof,
-                        downward_messages: Default::default(),
-                        horizontal_messages: Default::default(),
-                    },
-                }
-            };
-
-            println!("Setting new validation data");
-
-            Executive::apply_extrinsic(UncheckedExtrinsic::new_unsigned(
-                RuntimeCall::ParachainSystem(parachain_validation_data),
-            ))
-            .unwrap()
-            .unwrap();
-
-            println!("Setting new validation data done");
-
-            // Calls that need to be executed before each block starts (init_calls) go here
-        };
-
-        let end_block = |_block: u32| {
-            #[cfg(not(fuzzing))]
-            println!("Finalizing block {_block}");
-            Executive::finalize_block();
-
-            #[cfg(not(fuzzing))]
-            println!("Testing invariants for block {_block}");
-
-            <AllPalletsWithSystem as TryState<BlockNumber>>::try_state(_block, TryStateSelect::All)
-                .unwrap();
-        };
+        // Start block
+        let mut block: u32 = 8_151_183;
+        let mut elapsed: Duration = Duration::ZERO;
+        let mut weight: Weight = Weight::zero();
 
         //let mut externalities = scraper::create_externalities_from_snapshot::<Block>(&snapshot).expect("Failed to create ext");
         let mut externalities = scraper::create_externalities_with_backend::<Block>(
@@ -350,124 +251,157 @@ pub fn main() {
             state_version,
         );
 
-        #[cfg(not(any(fuzzing, coverage)))]
-        let mut mapper = MemoryMapper::new();
+        externalities.execute_with(|| {
+            initialize_block(block, None);
 
-        externalities.execute_with(|| start_block(current_block, current_timestamp));
+            // Calls that need to be executed in the first block go here
+            for (maybe_lapse, origin, extrinsic) in extrinsics {
+                if recursively_find_call(extrinsic.clone(), |call| {
+                    matches!(&call, RuntimeCall::XTokens(..))
+                        || matches!(&call, RuntimeCall::Timestamp(..))
+                        || matches!(&call, RuntimeCall::ParachainSystem(..))
+                }) {
+                    #[cfg(not(fuzzing))]
+                    println!("    Skipping because of custom filter");
+                    continue;
+                }
+                // If the lapse is in the range [0, MAX_BLOCK_LAPSE] we finalize the block and
+                // initialize a new one.
+                if let Some(lapse) = maybe_lapse {
+                    #[cfg(not(fuzzing))]
+                    println!("  lapse:       {:?}", lapse);
+                    // We end the current block
+                    let prev_header = finalize_block(elapsed);
 
-        // Calls that need to be executed in the first block go here
-        for (maybe_lapse, origin, extrinsic) in extrinsics {
-            if recursively_find_call(extrinsic.clone(), |call| {
-                matches!(&call, RuntimeCall::XTokens(..))
-                    || matches!(&call, RuntimeCall::Timestamp(..))
-                    || matches!(&call, RuntimeCall::ParachainSystem(..))
-            }) {
-                #[cfg(not(fuzzing))]
-                println!("    Skipping because of custom filter");
-                continue;
-            }
-            // If the lapse is in the range [0, MAX_BLOCK_LAPSE] we finalize the block and
-            // initialize a new one.
-            /*
-            if let Some(lapse) = maybe_lapse {
-                #[cfg(not(fuzzing))]
-                println!("  lapse:       {:?}", lapse);
-                // We end the current block
-                externalities.execute_with(|| end_block(current_block));
+                    // We update our state variables
+                    block += lapse;
+                    weight = Weight::zero();
+                    elapsed = Duration::ZERO;
 
-                // We update our state variables
-                current_block += lapse;
-                current_timestamp += lapse as u64 * SLOT_DURATION;
-                current_weight = Weight::zero();
+                    // We start the next block
+                    initialize_block(block, Some(&prev_header));
+                }
 
-                // We start the next block
-                externalities.execute_with(|| start_block(current_block, current_timestamp));
-            }
+                weight = weight.saturating_add(extrinsic.get_dispatch_info().weight);
+                if weight.ref_time() >= 2 * WEIGHT_REF_TIME_PER_SECOND {
+                    #[cfg(not(feature = "fuzzing"))]
+                    println!("Skipping because of max weight {weight}");
+                    continue;
+                }
 
-             */
-
-            // We get the current time for timing purposes.
-            #[cfg(not(fuzzing))]
-            println!("  call:       {:?}", extrinsic);
-
-            let mut call_weight = Weight::zero();
-            // We compute the weight to avoid overweight blocks.
-            externalities.execute_with(|| {
-                call_weight = extrinsic.get_dispatch_info().weight;
-            });
-
-            current_weight = current_weight.saturating_add(call_weight);
-            if current_weight.ref_time() >= max_weight.ref_time() {
-                #[cfg(not(fuzzing))]
-                println!("Skipping because of max weight {}", max_weight);
-                continue;
-            }
-
-            externalities.execute_with(|| {
                 // We use given list of accounts to choose from, not a random account from the system
                 let origin_account = accounts[origin % accounts.len()].clone();
 
-                #[cfg(not(any(fuzzing, coverage)))]
-                mapper.initialize_extrinsic(origin_account.clone(), format!("{:?}", extrinsic));
+                #[cfg(not(feature = "fuzzing"))]
+                println!("\n    origin:     {origin:?}");
+                #[cfg(not(feature = "fuzzing"))]
+                println!("    call:       {extrinsic:?}");
 
+                let now = Instant::now(); // We get the current time for timing purposes.
+                #[allow(unused_variables)]
                 // let's also dispatch as None, but only 15% of the time.
-                let _res = if origin % 100 < 15 {
+                let res = if origin % 100 < 15 {
                     extrinsic.clone().dispatch(RuntimeOrigin::none())
                 } else {
                     extrinsic
                         .clone()
                         .dispatch(RuntimeOrigin::signed(origin_account.clone()))
                 };
+                elapsed += now.elapsed();
 
                 #[cfg(not(fuzzing))]
-                println!("    result:     {:?}", &_res);
-
-                #[cfg(not(any(fuzzing, coverage)))]
-                mapper.finalize_extrinsic(_res, extrinsic, origin_account);
-
-                #[cfg(not(any(fuzzing, coverage)))]
-                {
-                    let elapsed =
-                        Duration::from_nanos(mapper.get_elapsed().try_into().unwrap()).as_secs();
-                    if elapsed > MAX_TIME_FOR_BLOCK {
-                        panic!("block execution took too much time - {}", elapsed)
-                    }
-                }
-            });
-        }
-
-        // We end the final block
-        externalities.execute_with(|| end_block(current_block));
-
-        // After execution of all blocks.
-        externalities.execute_with(|| {
-            // Check that the consumer/provider state is valid.
-            for acc in frame_system::Account::<FuzzedRuntime>::iter() {
-                let acc_consumers = acc.1.consumers;
-                let acc_providers = acc.1.providers;
-                if acc_consumers > 0 && acc_providers == 0 {
-                    panic!("Invalid state");
-                }
+                println!("    result:     {:?}", &res);
             }
 
-            #[cfg(not(fuzzing))]
-            println!("Running integrity tests\n");
-            // We run all developer-defined integrity tests
-            <AllPalletsWithSystem as IntegrityTest>::integrity_test();
+            // We end the final block
+            finalize_block(elapsed)
         });
 
-        // Exporting the map
-        #[cfg(not(any(fuzzing, coverage)))]
-        {
-            let helper = MapHelper { mapper };
-            helper.save();
+        // After execution of all blocks.
+        // Check that the consumer/provider state is valid.
+        for acc in frame_system::Account::<FuzzedRuntime>::iter() {
+            let acc_consumers = acc.1.consumers;
+            let acc_providers = acc.1.providers;
+            if acc_consumers > 0 && acc_providers == 0 {
+                panic!("Invalid state");
+            }
         }
+
+        #[cfg(not(fuzzing))]
+        println!("Running integrity tests\n");
+        // We run all developer-defined integrity tests
+        <AllPalletsWithSystem as IntegrityTest>::integrity_test();
     });
 }
 
+fn initialize_block(block: u32, prev_header: Option<&Header>) {
+    #[cfg(not(feature = "fuzzing"))]
+    println!("\ninitializing block {block}");
+
+    let pre_digest = Digest {
+        logs: vec![DigestItem::PreRuntime(
+            AURA_ENGINE_ID,
+            Slot::from(u64::from(block)).encode(),
+        )],
+    };
+
+    let parent_header = &Header::new(
+        block,
+        H256::default(),
+        H256::default(),
+        prev_header.map(Header::hash).unwrap_or_default(),
+        pre_digest,
+    );
+    Executive::initialize_block(parent_header);
+
+    #[cfg(not(feature = "fuzzing"))]
+    println!(" setting timestamp");
+    Timestamp::set(RuntimeOrigin::none(), u64::from(block) * SLOT_DURATION).unwrap();
+
+    #[cfg(not(feature = "fuzzing"))]
+    println!("  setting parachain validation data");
+    let parachain_validation_data = {
+        use cumulus_primitives_core::relay_chain::HeadData;
+        use cumulus_primitives_parachain_inherent::ParachainInherentData;
+        use cumulus_test_relay_sproof_builder::RelayStateSproofBuilder;
+
+        let parent_head = HeadData(prev_header.unwrap_or(parent_header).encode());
+        let sproof_builder = RelayStateSproofBuilder {
+            para_id: 100.into(),
+            current_slot: cumulus_primitives_core::relay_chain::Slot::from(2 * u64::from(block)),
+            included_para_head: Some(parent_head.clone()),
+            ..Default::default()
+        };
+
+        let (relay_parent_storage_root, relay_chain_state) =
+            sproof_builder.into_state_root_and_proof();
+        ParachainInherentData {
+            validation_data: polkadot_primitives::PersistedValidationData {
+                parent_head,
+                relay_parent_number: block,
+                relay_parent_storage_root,
+                max_pov_size: 1000,
+            },
+            relay_chain_state,
+            downward_messages: Vec::default(),
+            horizontal_messages: BTreeMap::default(),
+        }
+    };
+    ParachainSystem::set_validation_data(RuntimeOrigin::none(), parachain_validation_data).unwrap();
+}
+
+fn finalize_block(elapsed: Duration) -> Header {
+    #[cfg(not(feature = "fuzzing"))]
+    println!("\n  time spent: {elapsed:?}");
+    assert!(elapsed.as_secs() <= 2, "block execution took too much time");
+
+    #[cfg(not(feature = "fuzzing"))]
+    println!("finalizing block");
+    Executive::finalize_block()
+}
+
 use frame_remote_externalities::RemoteExternalities;
-use frame_support::pallet_prelude::Get;
-use frame_support::StoragePrefixedMap;
+use frame_support::{pallet_prelude::Get, StoragePrefixedMap};
 #[cfg(not(any(fuzzing, coverage)))]
 use frame_support::{dispatch::DispatchResultWithPostInfo, traits::Currency};
 use sp_io::TestExternalities;
@@ -596,121 +530,6 @@ impl MemoryMapper<'_> {
             allocator: None,
             extrinsic_name: String::new(),
         }
-    }
-
-    fn get_elapsed(&self) -> u128 {
-        self.map
-            .get(&self.extrinsic_name)
-            .map_or(0, |data| data.elapsed)
-    }
-
-    fn initialize_extrinsic(&mut self, origin: AccountId, extrinsic_name: String) {
-        //TODO: Use the default WASM allocator instead of the default one
-        #[global_allocator]
-        static GLOBAL: &StatsAlloc<System> = &INSTRUMENTED_SYSTEM;
-
-        self.allocator = Some(GLOBAL);
-        self.extrinsic_name = extrinsic_name;
-        self.snapshot.deallocated_before = GLOBAL.stats().bytes_deallocated as DeltaSize;
-        self.snapshot.allocated_before = GLOBAL.stats().bytes_allocated as DeltaSize;
-        self.snapshot.locked_before = <pallet_balances::Pallet<Runtime>>::locks(&origin)
-            .iter()
-            .map(|lock| lock.amount as DeltaSize)
-            .sum();
-        self.snapshot.balance_before = <pallet_balances::Pallet<Runtime>>::total_balance(&origin)
-            .try_into()
-            .unwrap();
-        self.snapshot.reserved_before =
-            <pallet_balances::Pallet<Runtime>>::reserved_balance(&origin)
-                .try_into()
-                .unwrap();
-
-        self.snapshot.timer = Some(Instant::now());
-
-        println!("  origin:     {:?}", origin);
-    }
-
-    fn finalize_extrinsic(
-        &mut self,
-        res: DispatchResultWithPostInfo,
-        extrinsic: RuntimeCall,
-        origin: AccountId,
-    ) {
-        if res.is_err() {
-            return;
-        }
-
-        let refreshed_alloc = self
-            .allocator
-            .expect("Allocator should be set at that point")
-            .stats();
-
-        let memory_delta: DeltaSize = (refreshed_alloc.bytes_allocated as DeltaSize
-            - self.snapshot.allocated_before)
-            - (refreshed_alloc.bytes_deallocated as DeltaSize - self.snapshot.deallocated_before);
-
-        let elapsed = self
-            .snapshot
-            .timer
-            .expect("Timer should be set at that point")
-            .elapsed()
-            .as_nanos();
-
-        println!("    memory:     {:?}", memory_delta);
-
-        let balance_after: DeltaSize = <pallet_balances::Pallet<Runtime>>::total_balance(&origin)
-            .try_into()
-            .unwrap();
-
-        let locked_after: DeltaSize = <pallet_balances::Pallet<Runtime>>::locks(&origin)
-            .iter()
-            .map(|lock| lock.amount as DeltaSize)
-            .sum();
-
-        let reserved_after: DeltaSize =
-            <pallet_balances::Pallet<Runtime>>::reserved_balance(&origin)
-                .try_into()
-                .unwrap();
-
-        let extrinsic_name = format!("{:?}", extrinsic);
-
-        let fee: Balance = pallet_transaction_payment::Pallet::<Runtime>::compute_actual_fee(
-            extrinsic_name.len() as u32, // TODO: Should use `get_encoded_size()`
-            &extrinsic.get_dispatch_info(),
-            &res.unwrap(),
-            0,
-        );
-
-        // We allow using basic math operators instead of saturated_sub() for example
-        // We assume that an overflow would be an invariant, and a panic would be needed
-        let balance_delta = self.snapshot.balance_before - balance_after;
-        let reserve_delta = self.snapshot.reserved_before - reserved_after;
-        let lock_delta = self.snapshot.locked_before - locked_after;
-
-        // Analyzing the extrinsic only if it passes.
-        if res.is_err() {
-            // If the extrinsic is an `Err()` but still has a not null `balance_delta`, `reserve_delta`, or `lock_delta` values, we panic!
-            if balance_delta != 0 || reserve_delta != 0 || lock_delta != 0 {
-                panic!(
-                    "Invariant panic! One of those values are not zero as it should be. \
-            It should not happen since the extrinsic returned an Err(). \
-            Debug values: balance_delta: {}, reserve_delta: {}, lock_delta: {}",
-                    balance_delta, reserve_delta, lock_delta
-                );
-            }
-            return;
-        }
-
-        let map: MappingData = MappingData {
-            fee,
-            balance_delta,
-            reserve_delta,
-            lock_delta,
-            memory_delta,
-            elapsed,
-        };
-
-        self.map.insert(extrinsic_name, map);
     }
 }
 

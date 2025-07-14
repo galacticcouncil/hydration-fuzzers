@@ -58,6 +58,8 @@ pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", bran
 
 pallet-evm = { git = "https://github.com/moonbeam-foundation/frontier", branch = "moonbeam-polkadot-stable2409", default-features = false }
 
+polkadot-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+
 [features]
 default = ["std", "try-runtime"]
 std = ["hydradx-runtime/std", "codec/std", "sp-runtime/std", "frame-support/std", "sp-consensus-aura/std"]

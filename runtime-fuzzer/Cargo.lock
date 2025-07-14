@@ -4802,6 +4802,7 @@ dependencies = [
  "pallet-transaction-payment",
  "pallet-utility",
  "parity-scale-codec",
+ "polkadot-primitives",
  "primitives",
  "quinn-proto 0.9.6",
  "runtime-mock",
