@@ -240,8 +240,8 @@ pub fn main() {
         }
 
         // Start block
-        let mut block: u32 = 1;
-        // let mut block: u32 = 8_151_183;
+        // let mut block: u32 = 1;
+        let mut block: u32 = 8_151_183;
 
         let mut elapsed: Duration = Duration::ZERO;
         let mut weight: Weight = Weight::zero();
@@ -262,7 +262,8 @@ pub fn main() {
         };
 
         externalities.execute_with(|| {
-            initialize_block(block, None);
+            // initialize_block(block, None);
+            initialize_block(block, dummy_header);
 
             // Calls that need to be executed in the first block go here
             for (maybe_lapse, origin, extrinsic) in extrinsics {
