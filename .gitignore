@@ -6,6 +6,8 @@ runtime-fuzzer/minimized/*
 runtime-fuzzer/output/*
 runtime-fuzzer/output.old/*
 
+prepare-snapshot/data/
+
 __pycache__/
 memory_map.output
 

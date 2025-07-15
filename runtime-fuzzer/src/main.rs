@@ -24,6 +24,7 @@ use std::{
     path::PathBuf,
     time::{Duration, Instant},
 };
+use sp_runtime::traits::BlockNumberProvider;
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
@@ -191,16 +192,23 @@ fn process_input(
         return;
     }
 
-    // Start block
-    // let mut block: u32 = 1;
-    let mut block: u32 = 8_338_378;
-
-    let mut elapsed: Duration = Duration::ZERO;
-    let mut weight: Weight = Weight::zero();
-
     //let mut externalities = scraper::create_externalities_from_snapshot::<Block>(&snapshot).expect("Failed to create ext");
     let mut externalities =
         scraper::create_externalities_with_backend::<Block>(backend.clone(), root, state_version);
+
+    //let mut block: u32 = 8_338_378;
+    let mut block: u32 = 0;
+
+    externalities.execute_with(|| {
+        block = System::current_block_number();
+        #[cfg(not(feature = "fuzzing"))]
+        println!("Block :{:?}", block);
+    });
+
+    assert!(block != 0, "block number is 0");
+
+    let mut elapsed: Duration = Duration::ZERO;
+    let mut weight: Weight = Weight::zero();
 
     let dummy_header: Header = Header {
         parent_hash: Default::default(),

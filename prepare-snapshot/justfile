@@ -1,26 +1,15 @@
+pallets := "Omnipool Stableswap AssetRegistry EVM DynamicFees EmaOracle MultiTransactionPayment Tokens Balances EVMAccounts Ethereum Aura System EVMChainId Timestamp XYK"
+#pallets := "Stableswap"
 
-# Prepare env for fuzzing
+scaper-bin := "./../../hydration-node/target/debug/scraper"
+
+make-snapshot binary_path blockhash:
+    @echo "Creating snapshot with binary: {{binary_path}}"
+    @echo "Block hash: {{blockhash}}"
+    {{binary_path}} save-storage --pallet {{pallets}} --at {{blockhash}} --uri wss://rpc.hydradx.cloud:443 --path ./
+    mv ./SNAPSHOT data/MAINNET
+
 prepare:
-    cargo install --force ziggy cargo-afl honggfuzz grcov
-    cargo afl config --build --force
-    cargo afl system-confi
+    @echo "Preparing"
+    ./target/debug/prepare-snapshot
 
-# Build target
-build:
-    cargo ziggy build
-
-# Build target with just one build jobs - useful when issue with compiling and broken pipes
-build_one_job:
-    CARGO_BUILD_JOBS=1 cargo ziggy build
-
-# Run the fuzzer
-fuzz:
-    cargo ziggy fuzz
-
-# Anyalyze crash directory
-crashes DIR:
-    ./run_crashes.sh {{DIR}}
-
-# Rust one crash report
-crash FILE:
-    cargo ziggy run -i {{FILE}}

@@ -15,6 +15,7 @@ use pallet_asset_registry::AssetDetails;
 use primitives::constants::currency::UNITS;
 use sp_core::storage::Storage;
 use sp_io::TestExternalities;
+use sp_runtime::traits::BlockNumberProvider;
 use accounts::*;
 
 /// Types from the fuzzed runtime.
@@ -38,8 +39,11 @@ fn get_storage_prefixes_to_copy() -> Vec<Vec<u8>>{
         pallet_evm::Pallet::<FuzzedRuntime>::storage_info(),
         pallet_transaction_multi_payment::Pallet::<FuzzedRuntime>::storage_info(),
         pallet_xyk::Pallet::<FuzzedRuntime>::storage_info(),
+        pallet_evm_accounts::Pallet::<FuzzedRuntime>::storage_info(),
+        frame_system::Pallet::<FuzzedRuntime>::storage_info(),
+        //pallet_timestamp::Pallet::<FuzzedRuntime>::storage_info(),
     ];
-    let exclude = vec!["Omnipool:Positions", "MultiTransactionPayment:AccountCurrencyMap"];
+    let exclude = vec!["Omnipool:Positions", "MultiTransactionPayment:AccountCurrencyMap", "System:Account"];
     let mut result = vec![];
     for i in info {
         for entry in i {
@@ -66,6 +70,9 @@ pub fn get_storage_under_prefix(
 
     ext.execute_with(|| {
         let mut key = prefix.to_vec();
+        if let Some(value) = sp_io::storage::get(&key) {
+            result.push((key.clone(), value.to_vec()));
+        }
 
         loop {
             match sp_io::storage::next_key(&key) {
@@ -142,7 +149,6 @@ fn genesis_storage(nonnative_balances : Vec<(AccountId, AssetId, Balance)>, nati
                 balances: nonnative_balances,
             },
             treasury: Default::default(),
-            elections: Default::default(),
             genesis_history: GenesisHistoryConfig::default(),
             claims: ClaimsConfig {
                 claims: Default::default(),
@@ -317,6 +323,11 @@ pub fn main() {
             builder.build().await.unwrap()
         });
 
+    ext_mainnet.execute_with(|| {
+        let b = System::current_block_number();
+        println!("current block number: {:?}", b);
+    });
+
     // Load balances of some important accounts
     let registry_state = load_registry_state(&mut ext_mainnet);
     let mut nonnative_balances = load_balances_for_important_accounts(&mut ext_mainnet, &registry_state);
@@ -368,6 +379,8 @@ pub fn main() {
             let asset = pallet_transaction_multi_payment::AcceptedCurrencies::<FuzzedRuntime>::get(r);
             //println!("{:?}: {:?}", r, asset);
         }
+        let b = frame_system::Pallet::<FuzzedRuntime>::current_block_number();
+        println!("current block number: {:?}", b);
     });
 
     let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
