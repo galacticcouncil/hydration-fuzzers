@@ -218,6 +218,13 @@ fn process_input(
         for (lapse, origin, extrinsic) in extrinsics {
             if recursively_find_call(extrinsic.clone(), |call| {
                 matches!(&call, RuntimeCall::XTokens(..))
+                    || matches!(call.clone(), RuntimeCall::PolkadotXcm(pallet_xcm::Call::execute { message, .. })
+                        if matches!(message.as_ref(), staging_xcm::VersionedXcm::V3(staging_xcm::v3::Xcm(msg))
+                            if msg.iter().any(|m| matches!(m, staging_xcm::opaque::v3::prelude::BuyExecution { fees: staging_xcm::v3::MultiAsset { fun, .. }, .. }
+                                if *fun == staging_xcm::v3::Fungibility::Fungible(0)
+                            ))
+                        )
+                    )
                     || matches!(&call, RuntimeCall::Timestamp(..))
                     || matches!(&call, RuntimeCall::ParachainSystem(..))
             }) {
