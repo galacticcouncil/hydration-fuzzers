@@ -28,6 +28,7 @@ pallet-omnipool = { path = "../../hydration-node/pallets/omnipool" }
 pallet-stableswap = { path = "../../hydration-node/pallets/stableswap" }
 pallet-ema-oracle = { path = "../../hydration-node/pallets/ema-oracle" }
 pallet-dynamic-fees = { path = "../../hydration-node/pallets/dynamic-fees" }
+pallet-dispatcher = { path = "../../hydration-node/pallets/dispatcher" }
 
 codec = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 

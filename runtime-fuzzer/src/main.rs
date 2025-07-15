@@ -133,7 +133,7 @@ fn recursively_find_call(call: RuntimeCall, matches_on: fn(RuntimeCall) -> bool)
     | RuntimeCall::Proxy(pallet_proxy::Call::proxy { call, .. }) = call
     {
         return recursively_find_call(*call.clone(), matches_on);
-    } else if let RuntimeCall::Dispatcher(crate::dispatcher::Call::dispatch_with_extra_gas {
+    } else if let RuntimeCall::Dispatcher(pallet_dispatcher::Call::dispatch_with_extra_gas {
         call,
         ..
     }) = &call

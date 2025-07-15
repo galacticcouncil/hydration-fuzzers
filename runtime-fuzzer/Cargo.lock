@@ -4791,6 +4791,7 @@ dependencies = [
  "pallet-asset-registry",
  "pallet-balances",
  "pallet-collective",
+ "pallet-dispatcher",
  "pallet-dynamic-fees",
  "pallet-ema-oracle",
  "pallet-evm",
