@@ -4,15 +4,7 @@ import subprocess
 
 CRASH_RUNNER = 'just crash'
 
-FILTERS = [
-    "referenda/src/lib.rs:926:9",
-    "polkadot/xcm/src/v4/asset.rs:304:9",
-    "frame/support/src/traits/misc.rs:218:17",
-    "stableswap/src/lib.rs:1525:9",
-    "aura-ext/src/consensus_hook.rs:71:4:",
-    "referenda/src/lib.rs:930:3",
-]
-
+FILTERS = []
 
 def process_crash_report(filename):
     try:
