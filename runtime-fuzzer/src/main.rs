@@ -4,7 +4,8 @@ use codec::{DecodeLimit, Encode};
 use cumulus_primitives_core::relay_chain::Header;
 use frame_support::traits::{StorageInfo, StorageInfoTrait};
 use frame_support::{
-    dispatch::GetDispatchInfo, pallet_prelude::Weight,
+    dispatch::GetDispatchInfo,
+    pallet_prelude::Weight,
     traits::{IntegrityTest, TryState, TryStateSelect},
     weights::constants::WEIGHT_REF_TIME_PER_SECOND,
 };
@@ -13,10 +14,16 @@ use primitives::constants::time::SLOT_DURATION;
 use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
 use sp_core::H256;
 use sp_runtime::{
-    Digest, DigestItem, StateVersion,
     traits::{Dispatchable, Header as _},
+    Digest, DigestItem, StateVersion,
 };
-use std::{collections::BTreeMap, io::Write, iter, path::PathBuf, time::{Duration, Instant}};
+use std::{
+    collections::BTreeMap,
+    io::Write,
+    iter,
+    path::PathBuf,
+    time::{Duration, Instant},
+};
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
@@ -126,6 +133,12 @@ fn recursively_find_call(call: RuntimeCall, matches_on: fn(RuntimeCall) -> bool)
     | RuntimeCall::Proxy(pallet_proxy::Call::proxy { call, .. }) = call
     {
         return recursively_find_call(*call.clone(), matches_on);
+    } else if let RuntimeCall::Dispatcher(crate::dispatcher::Call::dispatch_with_extra_gas {
+        call,
+        ..
+    }) = &call
+    {
+        return recursively_find_call(*call.clone(), matches_on);
     } else if matches_on(call) {
         return true;
     }
@@ -148,13 +161,17 @@ pub fn main() {
         scraper::construct_backend_from_snapshot::<Block>(snapshot)
             .expect("Failed to create backend");
 
-
     ziggy::fuzz!(|data: &[u8]| {
         process_input(backend.clone(), state_version, root, data);
     });
 }
 
-fn process_input(backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>, state_version: StateVersion, root: H256, data: &[u8]) {
+fn process_input(
+    backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
+    state_version: StateVersion,
+    root: H256,
+    data: &[u8],
+) {
     let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
@@ -167,114 +184,112 @@ fn process_input(backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>, stat
                 !recursively_find_call(x.clone(), |call| {
                     matches!(call.clone(), RuntimeCall::System(_))
                 })
-            }).collect();
+            })
+            .collect();
 
     if extrinsics.is_empty() {
         return;
     }
 
-     // Start block
-        // let mut block: u32 = 1;
-        let mut block: u32 = 8_338_378;
+    // Start block
+    // let mut block: u32 = 1;
+    let mut block: u32 = 8_338_378;
 
-        let mut elapsed: Duration = Duration::ZERO;
-        let mut weight: Weight = Weight::zero();
+    let mut elapsed: Duration = Duration::ZERO;
+    let mut weight: Weight = Weight::zero();
 
-        //let mut externalities = scraper::create_externalities_from_snapshot::<Block>(&snapshot).expect("Failed to create ext");
-        let mut externalities = scraper::create_externalities_with_backend::<Block>(
-            backend.clone(),
-            root,
-            state_version,
-        );
+    //let mut externalities = scraper::create_externalities_from_snapshot::<Block>(&snapshot).expect("Failed to create ext");
+    let mut externalities =
+        scraper::create_externalities_with_backend::<Block>(backend.clone(), root, state_version);
 
-        let dummy_header: Header = Header {
-            parent_hash: Default::default(),
-            number: block,
-            state_root: Default::default(),
-            extrinsics_root: Default::default(),
-            digest: Default::default(),
-        };
+    let dummy_header: Header = Header {
+        parent_hash: Default::default(),
+        number: block,
+        state_root: Default::default(),
+        extrinsics_root: Default::default(),
+        digest: Default::default(),
+    };
 
-        externalities.execute_with(|| {
-            // initialize_block(block, None);
-            initialize_block(block, Some(&dummy_header));
+    externalities.execute_with(|| {
+        // initialize_block(block, None);
+        initialize_block(block, Some(&dummy_header));
 
-            // Calls that need to be executed in the first block go here
-            for (lapse, origin, extrinsic) in extrinsics {
-                if recursively_find_call(extrinsic.clone(), |call| {
-                    matches!(&call, RuntimeCall::XTokens(..))
-                        || matches!(&call, RuntimeCall::Timestamp(..))
-                        || matches!(&call, RuntimeCall::ParachainSystem(..))
-                }) {
-                    #[cfg(not(feature = "fuzzing"))]
-                    println!("    Skipping because of custom filter");
-                    continue;
-                }
-                // If lapse is positive, then we finalize the block and initialize a new one.
-                if lapse > 0 {
-                    println!("  lapse:       {:?}", lapse);
-
-                    // Finalize current block
-                    let prev_header = finalize_block(elapsed);
-
-                    // We update our state variables
-                    block += u32::from(lapse);
-                    weight = Weight::zero();
-                    elapsed = Duration::ZERO;
-
-                    // We start the next block
-                    initialize_block(block, Some(&prev_header));
-                }
-
-                weight = weight.saturating_add(extrinsic.get_dispatch_info().weight);
-                if weight.ref_time() >= 2 * WEIGHT_REF_TIME_PER_SECOND {
-                    #[cfg(not(feature = "fuzzing"))]
-                    println!("Skipping because of max weight {weight}");
-                    continue;
-                }
-
-                // We use given list of accounts to choose from, not a random account from the system
-                let origin_account = accounts[origin as usize % accounts.len()].clone();
-
+        // Calls that need to be executed in the first block go here
+        for (lapse, origin, extrinsic) in extrinsics {
+            if recursively_find_call(extrinsic.clone(), |call| {
+                matches!(&call, RuntimeCall::XTokens(..))
+                    || matches!(&call, RuntimeCall::Timestamp(..))
+                    || matches!(&call, RuntimeCall::ParachainSystem(..))
+            }) {
                 #[cfg(not(feature = "fuzzing"))]
-                println!("\n    origin:     {origin:?}");
-                #[cfg(not(feature = "fuzzing"))]
-                println!("    call:       {extrinsic:?}");
+                println!("    Skipping because of custom filter");
+                continue;
+            }
+            // If lapse is positive, then we finalize the block and initialize a new one.
+            if lapse > 0 {
+                println!("  lapse:       {:?}", lapse);
 
-                let now = Instant::now(); // We get the current time for timing purposes.
-                #[allow(unused_variables)]
-                // let's also dispatch as None, but only 15% of the time.
-                let res = if origin % 100 < 15 {
-                    extrinsic.clone().dispatch(RuntimeOrigin::none())
-                } else {
-                    extrinsic
-                        .clone()
-                        .dispatch(RuntimeOrigin::signed(origin_account))
-                };
-                elapsed += now.elapsed();
+                // Finalize current block
+                let prev_header = finalize_block(elapsed);
 
-                #[cfg(not(feature = "fuzzing"))]
-                println!("    result:     {:?}", &res);
+                // We update our state variables
+                block += u32::from(lapse);
+                weight = Weight::zero();
+                elapsed = Duration::ZERO;
+
+                // We start the next block
+                initialize_block(block, Some(&prev_header));
             }
 
-            // We end the final block
-            finalize_block(elapsed)
-        });
+            weight = weight.saturating_add(extrinsic.get_dispatch_info().weight);
+            if weight.ref_time() >= 2 * WEIGHT_REF_TIME_PER_SECOND {
+                #[cfg(not(feature = "fuzzing"))]
+                println!("Skipping because of max weight {weight}");
+                continue;
+            }
 
-        // After execution of all blocks.
-        // Check that the consumer/provider state is valid.
-        // for acc in frame_system::Account::<FuzzedRuntime>::iter() {
-        //     let acc_consumers = acc.1.consumers;
-        //     let acc_providers = acc.1.providers;
-        //     if acc_consumers > 0 && acc_providers == 0 {
-        //         panic!("Invalid state");
-        //     }
-        // }
-        //
-        // #[cfg(not(feature = "fuzzing"))]
-        // println!("Running integrity tests\n");
-        // // We run all developer-defined integrity tests
-        // <AllPalletsWithSystem as IntegrityTest>::integrity_test();
+            // We use given list of accounts to choose from, not a random account from the system
+            let origin_account = accounts[origin as usize % accounts.len()].clone();
+
+            #[cfg(not(feature = "fuzzing"))]
+            println!("\n    origin:     {origin:?}");
+            #[cfg(not(feature = "fuzzing"))]
+            println!("    call:       {extrinsic:?}");
+
+            let now = Instant::now(); // We get the current time for timing purposes.
+            #[allow(unused_variables)]
+            // let's also dispatch as None, but only 15% of the time.
+            let res = if origin % 100 < 15 {
+                extrinsic.clone().dispatch(RuntimeOrigin::none())
+            } else {
+                extrinsic
+                    .clone()
+                    .dispatch(RuntimeOrigin::signed(origin_account))
+            };
+            elapsed += now.elapsed();
+
+            #[cfg(not(feature = "fuzzing"))]
+            println!("    result:     {:?}", &res);
+        }
+
+        // We end the final block
+        finalize_block(elapsed)
+    });
+
+    // After execution of all blocks.
+    // Check that the consumer/provider state is valid.
+    // for acc in frame_system::Account::<FuzzedRuntime>::iter() {
+    //     let acc_consumers = acc.1.consumers;
+    //     let acc_providers = acc.1.providers;
+    //     if acc_consumers > 0 && acc_providers == 0 {
+    //         panic!("Invalid state");
+    //     }
+    // }
+    //
+    // #[cfg(not(feature = "fuzzing"))]
+    // println!("Running integrity tests\n");
+    // // We run all developer-defined integrity tests
+    // <AllPalletsWithSystem as IntegrityTest>::integrity_test();
 }
 
 fn initialize_block(block: u32, prev_header: Option<&Header>) {
