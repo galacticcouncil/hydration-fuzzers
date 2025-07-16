@@ -2,7 +2,7 @@ extern crate polkadot_primitives;
 
 use codec::{DecodeLimit, Encode};
 use cumulus_primitives_core::relay_chain::Header;
-use frame_support::traits::{StorageInfo, StorageInfoTrait};
+use frame_support::traits::{StorageInfo, StorageInfoTrait, Time};
 use frame_support::{
     dispatch::GetDispatchInfo,
     pallet_prelude::Weight,
@@ -200,12 +200,12 @@ fn process_input(
     let mut block: u32 = 0;
 
     externalities.execute_with(|| {
-        block = System::current_block_number();
+        block = System::current_block_number() + 1;
         #[cfg(not(feature = "fuzzing"))]
-        println!("Block :{:?}", block);
+        println!("Starting snapshot block :{:?}", block);
     });
 
-    assert!(block != 0, "block number is 0");
+    assert_ne!(block, 0, "block number is 0");
 
     let mut elapsed: Duration = Duration::ZERO;
     let mut weight: Weight = Weight::zero();
@@ -311,6 +311,12 @@ fn initialize_block(block: u32, prev_header: Option<&Header>) {
     #[cfg(not(feature = "fuzzing"))]
     println!("\ninitializing block {block}");
 
+    let last_block = System::current_block_number();
+    assert!(last_block < block, "last block is not less than current block : {:?} {:?}", last_block, block);
+    let last_timestamp = Timestamp::now();
+    let block_diff = block - last_block;
+    let new_timestamp = last_timestamp + u64::from(block_diff) * SLOT_DURATION;
+
     let pre_digest = Digest {
         logs: vec![DigestItem::PreRuntime(
             AURA_ENGINE_ID,
@@ -329,7 +335,7 @@ fn initialize_block(block: u32, prev_header: Option<&Header>) {
 
     #[cfg(not(feature = "fuzzing"))]
     println!(" setting timestamp");
-    Timestamp::set(RuntimeOrigin::none(), u64::from(block) * SLOT_DURATION).unwrap();
+    Timestamp::set(RuntimeOrigin::none(), new_timestamp).unwrap();
 
     #[cfg(not(feature = "fuzzing"))]
     println!("  setting parachain validation data");
