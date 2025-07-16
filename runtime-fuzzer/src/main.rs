@@ -162,8 +162,11 @@ pub fn main() {
         scraper::construct_backend_from_snapshot::<Block>(snapshot)
             .expect("Failed to create backend");
 
+    let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
+    let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
+
     ziggy::fuzz!(|data: &[u8]| {
-        process_input(backend.clone(), state_version, root, data);
+        process_input(backend.clone(), state_version, root, data, assets, accounts);
     });
 }
 
@@ -172,10 +175,9 @@ fn process_input(
     state_version: StateVersion,
     root: H256,
     data: &[u8],
+    assets: Vec<u32>,
+    accounts: Vec<AccountId>,
 ) {
-    let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
-    let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
-
     // We build the list of extrinsics we will execute
     let mut extrinsic_data = data;
 
