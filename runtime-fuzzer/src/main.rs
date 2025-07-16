@@ -13,6 +13,7 @@ use hydradx_runtime::*;
 use primitives::constants::time::SLOT_DURATION;
 use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
 use sp_core::H256;
+use sp_runtime::traits::BlockNumberProvider;
 use sp_runtime::{
     traits::{Dispatchable, Header as _},
     Digest, DigestItem, StateVersion,
@@ -24,7 +25,6 @@ use std::{
     path::PathBuf,
     time::{Duration, Instant},
 };
-use sp_runtime::traits::BlockNumberProvider;
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
@@ -166,7 +166,14 @@ pub fn main() {
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
     ziggy::fuzz!(|data: &[u8]| {
-        process_input(backend.clone(), state_version, root, data, assets, accounts);
+        process_input(
+            backend.clone(),
+            state_version,
+            root,
+            data,
+            assets.clone(),
+            accounts.clone(),
+        );
     });
 }
 
@@ -314,7 +321,12 @@ fn initialize_block(block: u32, prev_header: Option<&Header>) {
     println!("\ninitializing block {block}");
 
     let last_block = System::current_block_number();
-    assert!(last_block < block, "last block is not less than current block : {:?} {:?}", last_block, block);
+    assert!(
+        last_block < block,
+        "last block is not less than current block : {:?} {:?}",
+        last_block,
+        block
+    );
     let last_timestamp = Timestamp::now();
     let block_diff = block - last_block;
     let new_timestamp = last_timestamp + u64::from(block_diff) * SLOT_DURATION;
