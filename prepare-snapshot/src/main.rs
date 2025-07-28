@@ -7,14 +7,16 @@ use sp_runtime::{
     traits::{Dispatchable, Header},
 };
 use std::path::PathBuf;
-use frame_support::traits::{StorageInfo, StorageInfoTrait};
+use frame_support::traits::{LockableCurrency, StorageInfo, StorageInfoTrait};
 use frame_remote_externalities::RemoteExternalities;
+use frame_support::traits::fungible::Mutate;
 use hydradx_runtime::Tokens;
 use orml_traits::MultiCurrency;
 use pallet_asset_registry::AssetDetails;
 use primitives::constants::currency::UNITS;
 use sp_core::storage::Storage;
 use sp_io::TestExternalities;
+use sp_runtime::traits::BlockNumberProvider;
 use accounts::*;
 
 /// Types from the fuzzed runtime.
@@ -38,8 +40,11 @@ fn get_storage_prefixes_to_copy() -> Vec<Vec<u8>>{
         pallet_evm::Pallet::<FuzzedRuntime>::storage_info(),
         pallet_transaction_multi_payment::Pallet::<FuzzedRuntime>::storage_info(),
         pallet_xyk::Pallet::<FuzzedRuntime>::storage_info(),
+        pallet_evm_accounts::Pallet::<FuzzedRuntime>::storage_info(),
+        frame_system::Pallet::<FuzzedRuntime>::storage_info(),
+        pallet_timestamp::Pallet::<FuzzedRuntime>::storage_info(),
     ];
-    let exclude = vec!["Omnipool:Positions", "MultiTransactionPayment:AccountCurrencyMap"];
+    let exclude = vec!["Omnipool:Positions", "MultiTransactionPayment:AccountCurrencyMap", "System:Account"];
     let mut result = vec![];
     for i in info {
         for entry in i {
@@ -66,6 +71,9 @@ pub fn get_storage_under_prefix(
 
     ext.execute_with(|| {
         let mut key = prefix.to_vec();
+        if let Some(value) = sp_io::storage::get(&key) {
+            result.push((key.clone(), value.to_vec()));
+        }
 
         loop {
             match sp_io::storage::next_key(&key) {
@@ -133,16 +141,19 @@ fn genesis_storage(nonnative_balances : Vec<(AccountId, AssetId, Balance)>, nati
                 phantom: Default::default(),
             },
             vesting: VestingConfig { vesting: vec![] },
+            asset_registry: Default::default(),
+            /*
             asset_registry: AssetRegistryConfig{
                 registered_assets: asset_ids.iter().map(|asset_id| (Some(*asset_id), None, 0,None, None, None,true)).collect::<Vec<_>>(),
                 ..Default::default()
             },
+
+             */
             multi_transaction_payment: MultiTransactionPaymentConfig::default(),
             tokens: TokensConfig {
                 balances: nonnative_balances,
             },
             treasury: Default::default(),
-            elections: Default::default(),
             genesis_history: GenesisHistoryConfig::default(),
             claims: ClaimsConfig {
                 claims: Default::default(),
@@ -317,6 +328,11 @@ pub fn main() {
             builder.build().await.unwrap()
         });
 
+    ext_mainnet.execute_with(|| {
+        let b = System::current_block_number();
+        println!("current block number: {:?}", b);
+    });
+
     // Load balances of some important accounts
     let registry_state = load_registry_state(&mut ext_mainnet);
     let mut nonnative_balances = load_balances_for_important_accounts(&mut ext_mainnet, &registry_state);
@@ -337,10 +353,19 @@ pub fn main() {
         storage_pairs.extend(r);
     }
 
-    let mut mocked_externalities = genesis_storage(nonnative_balances, native_balances, &registry_state);
+    //let mut mocked_externalities = genesis_storage(nonnative_balances, native_balances, &registry_state);
+    let mut mocked_externalities = genesis_storage(vec![], vec![], &registry_state);
     mocked_externalities.execute_with(|| {
         for (key, value) in storage_pairs {
             sp_io::storage::set(&key, &value);
+        }
+    });
+    mocked_externalities.execute_with(|| {
+        for (acc, amount) in native_balances {
+            pallet_balances::Pallet::<FuzzedRuntime>::set_balance(&acc, amount);
+        }
+        for (acc, asset_id, amount) in nonnative_balances {
+            orml_tokens::Pallet::<FuzzedRuntime>::set_balance(RuntimeOrigin::root(), acc, asset_id, amount, 0).expect("failed to set nonative token balance");
         }
     });
     mocked_externalities.commit_all().unwrap();
@@ -348,7 +373,7 @@ pub fn main() {
         let assets = pallet_omnipool::Assets::<FuzzedRuntime>::iter_keys();
         for a in assets {
             let asset = pallet_omnipool::Assets::<FuzzedRuntime>::get(a);
-            //println!("{:?}: {:?}", a, asset);
+            println!("{:?}: {:?}", a, asset);
         }
 
         let registry = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
@@ -368,6 +393,18 @@ pub fn main() {
             let asset = pallet_transaction_multi_payment::AcceptedCurrencies::<FuzzedRuntime>::get(r);
             //println!("{:?}: {:?}", r, asset);
         }
+        for acc in get_important_accounts() {
+            let balance10 = Tokens::free_balance(12, &acc);
+            let balancehdx = Balances::free_balance(&acc);
+            println!("{} {}", balance10, balancehdx);
+        }
+
+        let acc = pallet_stableswap::Pallet::<FuzzedRuntime>::pool_account(4200);
+        let b1007= Currencies::free_balance(1007, &acc);
+        let b808= Currencies::free_balance(1000809, &acc);
+        println!("{} {}", b1007, b808);
+        let b = frame_system::Pallet::<FuzzedRuntime>::current_block_number();
+        println!("current block number: {:?}", b);
     });
 
     let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
