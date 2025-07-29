@@ -292,6 +292,7 @@ fn process_input(
             }
             // If lapse is positive, then we finalize the block and initialize a new one.
             if lapse > 0 {
+                #[cfg(not(feature = "fuzzing"))]
                 println!("  lapse:       {:?}", lapse);
 
                 // Finalize current block
@@ -323,8 +324,8 @@ fn process_input(
 
             let now = Instant::now(); // We get the current time for timing purposes.
             #[allow(unused_variables)]
-            // let's also dispatch as None, but only 15% of the time.
-            let res = if origin % 100 < 15 {
+            // let's also dispatch as None, but only 2% of the time.
+            let res = if origin % 100 < 2 {
                 extrinsic.clone().dispatch(RuntimeOrigin::none())
             } else {
                 extrinsic
