@@ -1,73 +1,71 @@
-[package]
-name = "hydration-runtime-fuzzer"
-version = "0.3.0"
-description = "Fuzzer for the Hydration Runtime"
-authors = ["GalacticCouncil"]
-edition = "2021"
-homepage = "https://github.com/galacticcouncil/hydration-fuzzers"
-license = "Apache 2.0"
-repository = "https://github.com/galacticcouncil/hydration-fuzzers"
+[workspace]
+members = [
+    "prepare-snapshot",
+    "runtime-fuzzer"]
 
-[dependencies]
-ziggy = { workspace = true }
-stats_alloc = { workspace = true }
-tempfile = { workspace = true }
-static_init = { workspace = true }
-serde = { workspace = true }
-toml = { workspace = true }
-quinn-proto = { workspace = true }
-tokio = { workspace = true }
+[workspace.dependencies]
+prepare-snapshot = {path = "prepare-snapshot"}
+hydration-runtime-fuzzer = {path="runtime-fuzzer"}
 
-hydradx-runtime = { workspace = true }
-hydradx-traits = { workspace = true }
-primitives = { workspace = true }
-scraper = { workspace = true }
-runtime-mock = { workspace = true }
-pallet-asset-registry = { workspace = true }
-pallet-omnipool = { workspace = true }
-pallet-stableswap = { workspace = true }
-pallet-ema-oracle = { workspace = true }
-pallet-dynamic-fees = { workspace = true }
-pallet-dispatcher = { workspace = true }
+ziggy = { version = "=1.2.1", default-features = false }
+stats_alloc = "0.1.1"
+tempfile = "3.20.0"
+static_init =  "=1.0.3"
+serde = { version = "1.0.193", features = ["derive"] }
+toml = "0.5"
+quinn-proto = { version = "0.9.6", features = ["arbitrary"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
-codec = { workspace = true }
+hydradx-runtime = { path = "../hydration-node/runtime/hydradx" }
+hydradx-traits = { path = "../hydration-node/traits" }
+primitives = { path = "../hydration-node/primitives" }
+scraper = { path = "../hydration-node/scraper" }
+runtime-mock = { path = "../hydration-node/runtime-mock" }
+pallet-asset-registry = { path = "../hydration-node/pallets/asset-registry" }
+pallet-omnipool = { path = "../hydration-node/pallets/omnipool" }
+pallet-stableswap = { path = "../hydration-node/pallets/stableswap" }
+pallet-ema-oracle = { path = "../hydration-node/pallets/ema-oracle" }
+pallet-dynamic-fees = { path = "../hydration-node/pallets/dynamic-fees" }
+pallet-dispatcher = { path = "../hydration-node/pallets/dispatcher" }
+pallet-evm-accounts = { path = "../hydration-node/pallets/evm-accounts" }
+pallet-transaction-multi-payment = { path = "../hydration-node/pallets/transaction-multi-payment" }
+pallet-xyk = { path = "../hydration-node/pallets/xyk" }
 
-frame-benchmarking = { workspace = true }
-frame-support = { workspace = true }
-frame-system = { workspace = true }
-frame-remote-externalities = { workspace = true }
+orml-traits = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2409" }
 
-sp-core = { workspace = true }
-sp-consensus-aura = { workspace = true }
-sp-io = { workspace = true }
-sp-runtime = { workspace = true }
-sp-trie = { workspace = true }
+codec = { package = "parity-scale-codec", version = "3.4.0", default-features = false, features = ["derive"] }
 
-cumulus-pallet-parachain-system = { workspace = true }
-cumulus-primitives-core = { workspace = true }
-cumulus-primitives-parachain-inherent = { workspace = true }
-cumulus-test-relay-sproof-builder = { workspace = true }
+frame-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+frame-support = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+frame-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+frame-remote-externalities= { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
 
-orml-tokens = { workspace = true }
+sp-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+sp-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+sp-io = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+sp-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+sp-trie = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
 
-pallet-balances = { workspace = true }
-pallet-collective = { workspace = true }
-pallet-multisig = { workspace = true }
-pallet-proxy = { workspace = true }
-pallet-timestamp = { workspace = true }
-pallet-transaction-payment = { workspace = true }
-pallet-utility = { workspace = true }
+cumulus-pallet-parachain-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+cumulus-primitives-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+cumulus-primitives-parachain-inherent = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+cumulus-test-relay-sproof-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
 
-pallet-evm = { workspace = true }
+orml-tokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2409", default-features = false }
 
-polkadot-primitives = { workspace = true }
-pallet-xcm = { workspace = true }
-staging-xcm = { workspace = true }
+pallet-balances = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-collective = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-multisig = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
+pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5", default-features = false }
 
-[features]
-default = ["std", "try-runtime"]
-std = ["hydradx-runtime/std", "codec/std", "sp-runtime/std", "frame-support/std", "sp-consensus-aura/std"]
-try-runtime = ["hydradx-runtime/try-runtime", "frame-support/try-runtime"]
+pallet-evm = { git = "https://github.com/moonbeam-foundation/frontier", branch = "moonbeam-polkadot-stable2409", default-features = false }
+
+polkadot-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+pallet-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
+staging-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "stable2409-patch5" }
 
 [patch."https://github.com/moonbeam-foundation/open-runtime-module-library"]
 # ORML dependencies

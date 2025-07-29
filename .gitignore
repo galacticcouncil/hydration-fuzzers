@@ -6,6 +6,8 @@ runtime-fuzzer/minimized/*
 runtime-fuzzer/output/*
 runtime-fuzzer/output.old/*
 
+output/*
+
 prepare-snapshot/data/
 
 __pycache__/

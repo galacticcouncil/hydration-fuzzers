@@ -51,7 +51,7 @@ const MAX_TIME_FOR_BLOCK: u64 = 6;
 // panicking on finalize.
 // Set to number of blocks in two months
 //const MAX_BLOCK_LAPSE: u32 = 864_000;
-const MAX_BLOCK_LAPSE: u32 = 1000;
+const MAX_BLOCK_LAPSE: u8 = 50;
 
 // Extrinsic delimiter: `********`
 const DELIMITER: [u8; 8] = [42; 8];
@@ -177,6 +177,58 @@ pub fn main() {
     });
 }
 
+fn prepare_extrinsics(data: &[u8], assets: &[u32]) -> Vec<(u8, u8, RuntimeCall)> {
+    let iteratable = Data {
+        data,
+        pointer: 0,
+        size: 0,
+    };
+
+    let extrinsics: Vec<(u8, u8, RuntimeCall)> = iteratable
+        .filter_map(|data| {
+            // Min lengths required for the data
+            // - lapse is u32 (1 byte),
+            // - origin is u16 (1 byte)
+            // - structured fuzzer (1 byte)
+            let min_data_len = 1 + 1 + 1;
+            if data.len() <= min_data_len {
+                return None;
+            }
+            let lapse: u8 = data[0];
+            let origin: u8 = data[1];
+            let specific_extrinsic: u8 = data[2];
+            let mut encoded_extrinsic: &[u8] = &data[3..];
+
+            // If the lapse is in the range [1, MAX_BLOCK_LAPSE] it is valid.
+            let lapse = match lapse {
+                1..=MAX_BLOCK_LAPSE => lapse,
+                _ => 0,
+            };
+
+            let maybe_extrinsic = if let Some(extrinsic) =
+                try_specific_extrinsic(specific_extrinsic, encoded_extrinsic, assets)
+            {
+                Ok(extrinsic)
+            } else {
+                DecodeLimit::decode_all_with_depth_limit(64, &mut encoded_extrinsic)
+            };
+
+            if let Ok(decoded_extrinsic) = maybe_extrinsic {
+                Some((lapse, origin, decoded_extrinsic))
+            } else {
+                None
+            }
+        })
+        .filter(|(_, _, x): &(_, _, RuntimeCall)| {
+            !recursively_find_call(x.clone(), |call| {
+                matches!(call.clone(), RuntimeCall::System(_))
+            })
+        })
+        .collect();
+
+    extrinsics
+}
+
 fn process_input(
     backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
     state_version: StateVersion,
@@ -185,18 +237,7 @@ fn process_input(
     assets: Vec<u32>,
     accounts: Vec<AccountId>,
 ) {
-    // We build the list of extrinsics we will execute
-    let mut extrinsic_data = data;
-
-    let extrinsics: Vec<(u8, u8, RuntimeCall)> =
-        iter::from_fn(|| DecodeLimit::decode_with_depth_limit(64, &mut extrinsic_data).ok())
-            .filter(|(_, _, x): &(_, _, RuntimeCall)| {
-                !recursively_find_call(x.clone(), |call| {
-                    matches!(call.clone(), RuntimeCall::System(_))
-                })
-            })
-            .collect();
-
+    let extrinsics = prepare_extrinsics(data, &assets);
     if extrinsics.is_empty() {
         return;
     }

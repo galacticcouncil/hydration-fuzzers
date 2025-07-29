@@ -21,7 +21,5 @@ pub fn get_fuzzer_accounts() -> Vec<primitives::AccountId> {
 }
 
 pub fn get_important_accounts() -> Vec<primitives::AccountId> {
-    vec![
-        pallet_omnipool::Pallet::<FuzzedRuntime>::protocol_account()
-    ]
+    vec![pallet_omnipool::Pallet::<FuzzedRuntime>::protocol_account()]
 }
