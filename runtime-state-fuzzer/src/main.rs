@@ -26,38 +26,35 @@ use std::{
     time::{Duration, Instant},
 };
 
+thread_local! {
+    static BACKEND: std::cell::RefCell<sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>> = std::cell::RefCell::new({
+        let original_data = std::fs::read(SNAPSHOT_PATH).expect("Missing snapshot file");
+        let snapshot = scraper::get_snapshot_from_bytes::<Block>(original_data).expect("Failed to create snapshot");
+        let (backend, _, _) = scraper::construct_backend_from_snapshot::<Block>(snapshot).expect("Failed to create backend");
+        backend
+    });
+
+    static ROOT: std::cell::RefCell<H256> = std::cell::RefCell::new({
+        let original_data = std::fs::read(SNAPSHOT_PATH).expect("Missing snapshot file");
+        let snapshot = scraper::get_snapshot_from_bytes::<Block>(original_data).expect("Failed to create snapshot");
+        let (_, _, root) = scraper::construct_backend_from_snapshot::<Block>(snapshot).expect("Failed to create backend");
+        root
+    });
+}
+
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
 type RuntimeOrigin = <FuzzedRuntime as frame_system::Config>::RuntimeOrigin;
 type AccountId = <FuzzedRuntime as frame_system::Config>::AccountId;
 
-/// The maximum number of blocks per fuzzer input.
-/// If set to 0, then there is no limit at all.
-/// For stateful fuzzing, we use a much higher limit to allow longer state evolution.
 const MAX_BLOCKS_PER_INPUT: usize = 1000;
-
-/// The maximum number of extrinsics per block.
-/// If set to 0, then there is no limit at all.
-/// Feel free to set this to a low number (e.g. 8) when you begin your fuzzing campaign and then set
-/// it back to 0 once you have good coverage.
 const MAX_EXTRINSICS_PER_BLOCK: usize = 0;
-
-/// Max number of seconds a block should run for.
 #[cfg(not(feature = "fuzzing"))]
 const MAX_TIME_FOR_BLOCK: u64 = 6;
-
-// We do not skip more than DEFAULT_STORAGE_PERIOD to avoid pallet_transaction_storage from
-// panicking on finalize.
-// Set to number of blocks in two months
-//const MAX_BLOCK_LAPSE: u32 = 864_000;
 const MAX_BLOCK_LAPSE: u32 = 1000;
-
-// Extrinsic delimiter: `********`
 const DELIMITER: [u8; 8] = [42; 8];
-
 const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
 
-// We won't analyse those native Substrate pallets
 #[cfg(not(feature = "fuzzing"))]
 const BLACKLISTED_CALLS: [&str; 8] = [
     "RuntimeCall::System",
@@ -66,7 +63,6 @@ const BLACKLISTED_CALLS: [&str; 8] = [
     "RuntimeCall::Uniques",
     "RuntimeCall::Balances",
     "RuntimeCall::Timestamp",
-    // to prevent false negatives from debug_assert_ne
     "RuntimeCall::XTokens",
     "RuntimeCall::Referenda",
 ];
@@ -127,16 +123,16 @@ fn recursively_find_call(call: RuntimeCall, matches_on: fn(RuntimeCall) -> bool)
             }
         }
     } else if let RuntimeCall::Multisig(pallet_multisig::Call::as_multi_threshold_1 {
-        call, ..
-    })
+                                            call, ..
+                                        })
     | RuntimeCall::Utility(pallet_utility::Call::as_derivative { call, .. })
     | RuntimeCall::Proxy(pallet_proxy::Call::proxy { call, .. }) = call
     {
         return recursively_find_call(*call.clone(), matches_on);
     } else if let RuntimeCall::Dispatcher(pallet_dispatcher::Call::dispatch_with_extra_gas {
-        call,
-        ..
-    }) = &call
+                                              call,
+                                              ..
+                                          }) = &call
     {
         return recursively_find_call(*call.clone(), matches_on);
     } else if matches_on(call) {
@@ -144,6 +140,7 @@ fn recursively_find_call(call: RuntimeCall, matches_on: fn(RuntimeCall) -> bool)
     }
     false
 }
+
 fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option<RuntimeCall> {
     for handler in extrinsics_handlers() {
         if let Some(call) = handler.try_extrinsic(identifier, data, assets) {
@@ -154,33 +151,33 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
 }
 
 pub fn main() {
-    // Load snapshot once per process - no disk persistence, just in-memory state
-    let original_data = std::fs::read(SNAPSHOT_PATH).unwrap();
-    let snapshot = scraper::get_snapshot_from_bytes::<Block>(original_data)
-        .expect("Failed to create snapshot");
-    let (mut backend, state_version, mut root) =
-        scraper::construct_backend_from_snapshot::<Block>(snapshot)
-            .expect("Failed to create backend");
-
+    let state_version = StateVersion::V1;
     let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
     ziggy::fuzz!(|data: &[u8]| {
-        // State persists in memory between inputs within this process
-        let result = process_input_stateful(
-            &mut backend,
-            state_version,
-            &mut root,
-            data,
-            assets.clone(),
-            accounts.clone(),
-        );
-        // Update root with any state changes
-        if let Some(new_root) = result {
-            root = new_root;
-        }
+        BACKEND.with(|backend_cell| {
+            ROOT.with(|root_cell| {
+                let mut backend = backend_cell.borrow_mut();
+                let mut root = *root_cell.borrow();
+
+                let result = process_input_stateful(
+                    &mut backend,
+                    state_version,
+                    &mut root,
+                    data,
+                    assets.clone(),
+                    accounts.clone(),
+                );
+
+                if let Some(new_root) = result {
+                    *root_cell.borrow_mut() = new_root;
+                }
+            });
+        });
     });
 }
+
 
 fn process_input_stateful(
     backend: &mut sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
