@@ -4774,7 +4774,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hydration-runtime-fuzzer"
+name = "hydration-runtime-state-fuzzer"
 version = "0.3.0"
 dependencies = [
  "cumulus-pallet-parachain-system",
@@ -4814,6 +4814,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-state-machine",
  "sp-trie",
  "staging-xcm",
  "static_init",
