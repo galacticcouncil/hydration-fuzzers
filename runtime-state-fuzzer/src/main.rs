@@ -19,6 +19,7 @@ use sp_runtime::{
     Digest, DigestItem, StateVersion,
 };
 use sp_state_machine::TrieBackendBuilder;
+use sp_state_machine::Backend as _;
 use std::{
     collections::BTreeMap,
     io::Write,
@@ -193,7 +194,7 @@ fn process_input_stateful(
     if let Some(new_root) = result {
         let is_valid = {
             let trie_backend = sp_state_machine::TrieBackendBuilder::new(backend.clone(), new_root).build();
-            trie_backend.get(b":extrinsic_index").is_ok()
+            trie_backend.storage(b":extrinsic_index").is_ok()
         };
 
         if is_valid {
