@@ -319,8 +319,8 @@ fn process_input(
     // Return new root hash to persist state changes
     externalities.execute_with(|| {
         let header = System::finalize();
-        Some(header.state_root().clone())
-    }).unwrap_or(Some(root))
+        header.state_root().clone()
+    }).into()
     
     // After execution of all blocks.
     // Check that the consumer/provider state is valid.
