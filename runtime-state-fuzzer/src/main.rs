@@ -187,11 +187,22 @@ fn process_input_stateful(
     assets: Vec<u32>,
     accounts: Vec<AccountId>,
 ) -> Option<H256> {
-    process_input(backend.clone(), state_version, *root, data, assets, accounts)
+    let result = process_input(backend, state_version, *root, data, assets, accounts);
+
+    if let Some(new_root) = result {
+        if backend.contains(&new_root).unwrap_or(false) {
+            return Some(new_root);
+        } else {
+            #[cfg(not(feature = "fuzzing"))]
+            eprintln!("⚠️  Skipping invalid root: {new_root:?}");
+        }
+    }
+
+    None
 }
 
 fn process_input(
-    backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
+    backend: &mut sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
     state_version: StateVersion,
     root: H256,
     data: &[u8],
