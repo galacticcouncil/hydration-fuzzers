@@ -191,15 +191,16 @@ fn process_input_stateful(
     let result = process_input(backend, state_version, *root, data, assets, accounts);
 
     if let Some(new_root) = result {
-        // Build a backend with the new root
-        let backend_check = TrieBackendBuilder::new(backend.clone(), new_root).build();
-        let state_root_valid = backend_check.storage_root(state_version).is_ok();
+        let is_valid = {
+            let trie_backend = sp_state_machine::TrieBackendBuilder::new(backend.clone(), new_root).build();
+            trie_backend.get(b":extrinsic_index").is_ok()
+        };
 
-        if state_root_valid {
+        if is_valid {
             return Some(new_root);
         } else {
             #[cfg(not(feature = "fuzzing"))]
-            eprintln!("⚠️  Invalid state root rejected: {new_root:?}");
+            eprintln!("⚠️  Rejected invalid root: {new_root:?}");
         }
     }
 
