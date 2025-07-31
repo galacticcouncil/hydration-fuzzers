@@ -18,6 +18,7 @@ use sp_runtime::{
     traits::{Dispatchable, Header as _},
     Digest, DigestItem, StateVersion,
 };
+use sp_state_machine::TrieBackendBuilder;
 use std::{
     collections::BTreeMap,
     io::Write,
@@ -190,11 +191,15 @@ fn process_input_stateful(
     let result = process_input(backend, state_version, *root, data, assets, accounts);
 
     if let Some(new_root) = result {
-        if backend.contains(&new_root).unwrap_or(false) {
+        // Build a backend with the new root
+        let backend_check = TrieBackendBuilder::new(backend.clone(), new_root).build();
+        let state_root_valid = backend_check.storage_root(state_version).is_ok();
+
+        if state_root_valid {
             return Some(new_root);
         } else {
             #[cfg(not(feature = "fuzzing"))]
-            eprintln!("⚠️  Skipping invalid root: {new_root:?}");
+            eprintln!("⚠️  Invalid state root rejected: {new_root:?}");
         }
     }
 
