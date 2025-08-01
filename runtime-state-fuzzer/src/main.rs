@@ -33,7 +33,7 @@ use std::cell::RefCell;
 use std::process;
 
 fn snapshot_path_for_pid() -> String {
-    format!("output/pid_snapshots/snapshot-{}.bin", process::id())
+    format!("pid_snapshots/snapshot-{}.bin", process::id())
 }
 
 thread_local! {
