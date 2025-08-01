@@ -28,19 +28,37 @@ use std::{
     time::{Duration, Instant},
 };
 
+use std::process;
+
+fn backend_path() -> String {
+    format!("output/hydration-runtime-state-fuzzer/tmp/backend-{}.bin", process::id())
+}
+fn root_path() -> String {
+    format!("output/hydration-runtime-state-fuzzer/tmp/root-{}.hex", process::id())
+}
+
+
 thread_local! {
-    static BACKEND: std::cell::RefCell<sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>> = std::cell::RefCell::new({
-        let original_data = std::fs::read(SNAPSHOT_PATH).expect("Missing snapshot file");
-        let snapshot = scraper::get_snapshot_from_bytes::<Block>(original_data).expect("Failed to create snapshot");
-        let (backend, _, _) = scraper::construct_backend_from_snapshot::<Block>(snapshot).expect("Failed to create backend");
-        backend
+    static BACKEND: RefCell<sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>> = RefCell::new({
+        if let Ok(bytes) = std::fs::read(backend_path()) {
+            bincode::deserialize(&bytes).expect("Failed to deserialize backend")
+        } else {
+            let snapshot_bytes = std::fs::read(SNAPSHOT_PATH).expect("Missing snapshot file");
+            let snapshot = scraper::get_snapshot_from_bytes::<Block>(snapshot_bytes).expect("Failed to create snapshot");
+            let (backend, _, _) = scraper::construct_backend_from_snapshot::<Block>(snapshot).expect("Failed to create backend");
+            backend
+        }
     });
 
-    static ROOT: std::cell::RefCell<H256> = std::cell::RefCell::new({
-        let original_data = std::fs::read(SNAPSHOT_PATH).expect("Missing snapshot file");
-        let snapshot = scraper::get_snapshot_from_bytes::<Block>(original_data).expect("Failed to create snapshot");
-        let (_, _, root) = scraper::construct_backend_from_snapshot::<Block>(snapshot).expect("Failed to create backend");
-        root
+    static ROOT: RefCell<H256> = RefCell::new({
+        if let Ok(hex) = std::fs::read_to_string(root_path()) {
+            H256::from_slice(&hex::decode(hex.trim()).expect("Invalid hex"))
+        } else {
+            let snapshot_bytes = std::fs::read(SNAPSHOT_PATH).expect("Missing snapshot file");
+            let snapshot = scraper::get_snapshot_from_bytes::<Block>(snapshot_bytes).expect("Failed to create snapshot");
+            let (_, _, root) = scraper::construct_backend_from_snapshot::<Block>(snapshot).expect("Failed to create backend");
+            root
+        }
     });
 }
 
@@ -174,6 +192,12 @@ pub fn main() {
 
                 if let Some(new_root) = result {
                     *root_cell.borrow_mut() = new_root;
+
+                    // Per-process persistence
+                    let backend_bytes = bincode::serialize(&*backend).expect("Failed to serialize backend");
+                    std::fs::write(backend_path(), backend_bytes).expect("Failed to persist backend");
+
+                    std::fs::write(root_path(), hex::encode(new_root)).expect("Failed to persist root");
                 }
             });
         });
