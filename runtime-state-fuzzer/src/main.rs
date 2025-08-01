@@ -222,6 +222,9 @@ fn process_input_stateful(
         };
 
         if is_valid {
+            #[cfg(not(feature = "fuzzing"))]
+            println!("iz_valid", process::id());
+
             return Some(new_root);
         } else {
             #[cfg(not(feature = "fuzzing"))]
