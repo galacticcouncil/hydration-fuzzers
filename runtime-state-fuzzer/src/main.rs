@@ -176,6 +176,9 @@ pub fn main() {
     ziggy::fuzz!(|data: &[u8]| {
         BACKEND.with(|backend_cell| {
             ROOT.with(|root_cell| {
+                #[cfg(not(feature = "fuzzing"))]
+                println!("PID :{:?}", process::id());
+
                 let mut backend = backend_cell.borrow_mut();
                 let mut root = *root_cell.borrow();
 
