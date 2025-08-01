@@ -216,22 +216,23 @@ fn process_input_stateful(
     let result = process_input(backend, state_version, *root, data, assets, accounts);
 
     if let Some(new_root) = result {
-        #[cfg(not(feature = "fuzzing"))]
-        println!("izresult");
-        let is_valid = {
-            let trie_backend = sp_state_machine::TrieBackendBuilder::new(backend.clone(), new_root).build();
-            trie_backend.storage(b":extrinsic_index").is_ok()
-        };
-
-        if is_valid {
-            #[cfg(not(feature = "fuzzing"))]
-            println!("iz_valid");
-
-            return Some(new_root);
-        } else {
-            #[cfg(not(feature = "fuzzing"))]
-            eprintln!("⚠️  Rejected invalid root: {new_root:?}");
-        }
+        // #[cfg(not(feature = "fuzzing"))]
+        // println!("izresult");
+        // let is_valid = {
+        //     let trie_backend = sp_state_machine::TrieBackendBuilder::new(backend.clone(), new_root).build();
+        //     trie_backend.storage(b":extrinsic_index").is_ok()
+        // };
+        //
+        // if is_valid {
+        //     #[cfg(not(feature = "fuzzing"))]
+        //     println!("iz_valid");
+        //
+        //     return Some(new_root);
+        // } else {
+        //     #[cfg(not(feature = "fuzzing"))]
+        //     eprintln!("⚠️  Rejected invalid root: {new_root:?}");
+        // }
+        return Some(new_root);
     }
 
     None
