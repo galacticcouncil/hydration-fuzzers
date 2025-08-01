@@ -192,6 +192,7 @@ pub fn main() {
                 );
 
                 if let Some(new_root) = result {
+                    println!("ssaving");
                     *root_cell.borrow_mut() = new_root;
 
                     // Create externalities from current backend state and save
