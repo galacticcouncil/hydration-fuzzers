@@ -28,37 +28,35 @@ use std::{
     time::{Duration, Instant},
 };
 
+use std::cell::RefCell;
+
 use std::process;
 
-fn backend_path() -> String {
-    format!("output/hydration-runtime-state-fuzzer/tmp/backend-{}.bin", process::id())
+fn snapshot_path_for_pid() -> String {
+    format!("data/snapshot-{}.bin", process::id())
 }
-fn root_path() -> String {
-    format!("output/hydration-runtime-state-fuzzer/tmp/root-{}.hex", process::id())
-}
-
 
 thread_local! {
     static BACKEND: RefCell<sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>> = RefCell::new({
-        if let Ok(bytes) = std::fs::read(backend_path()) {
-            bincode::deserialize(&bytes).expect("Failed to deserialize backend")
-        } else {
-            let snapshot_bytes = std::fs::read(SNAPSHOT_PATH).expect("Missing snapshot file");
-            let snapshot = scraper::get_snapshot_from_bytes::<Block>(snapshot_bytes).expect("Failed to create snapshot");
-            let (backend, _, _) = scraper::construct_backend_from_snapshot::<Block>(snapshot).expect("Failed to create backend");
-            backend
-        }
+        let snapshot_bytes = std::fs::read(snapshot_path_for_pid())
+            .or_else(|_| std::fs::read(SNAPSHOT_PATH))
+            .expect("Missing snapshot file");
+        let snapshot = scraper::get_snapshot_from_bytes::<Block>(snapshot_bytes)
+            .expect("Failed to create snapshot");
+        let (backend, _, _) = scraper::construct_backend_from_snapshot::<Block>(snapshot)
+            .expect("Failed to create backend");
+        backend
     });
 
     static ROOT: RefCell<H256> = RefCell::new({
-        if let Ok(hex) = std::fs::read_to_string(root_path()) {
-            H256::from_slice(&hex::decode(hex.trim()).expect("Invalid hex"))
-        } else {
-            let snapshot_bytes = std::fs::read(SNAPSHOT_PATH).expect("Missing snapshot file");
-            let snapshot = scraper::get_snapshot_from_bytes::<Block>(snapshot_bytes).expect("Failed to create snapshot");
-            let (_, _, root) = scraper::construct_backend_from_snapshot::<Block>(snapshot).expect("Failed to create backend");
-            root
-        }
+        let snapshot_bytes = std::fs::read(snapshot_path_for_pid())
+            .or_else(|_| std::fs::read(SNAPSHOT_PATH))
+            .expect("Missing snapshot file");
+        let snapshot = scraper::get_snapshot_from_bytes::<Block>(snapshot_bytes)
+            .expect("Failed to create snapshot");
+        let (_, _, root) = scraper::construct_backend_from_snapshot::<Block>(snapshot)
+            .expect("Failed to create backend");
+        root
     });
 }
 
@@ -193,11 +191,9 @@ pub fn main() {
                 if let Some(new_root) = result {
                     *root_cell.borrow_mut() = new_root;
 
-                    // Per-process persistence
-                    let backend_bytes = bincode::serialize(&*backend).expect("Failed to serialize backend");
-                    std::fs::write(backend_path(), backend_bytes).expect("Failed to persist backend");
-
-                    std::fs::write(root_path(), hex::encode(new_root)).expect("Failed to persist root");
+                    // Create externalities from current backend state and save
+                    let mut ext = scraper::create_externalities_with_backend::<Block>(backend.clone(), new_root, StateVersion::V1);
+                    scraper::save_externalities::<Block>(ext, snapshot_path_for_pid().into()).expect("Failed to persist snapshot");
                 }
             });
         });
