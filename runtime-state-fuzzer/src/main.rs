@@ -215,10 +215,9 @@ fn process_input_stateful(
 ) -> Option<H256> {
     let result = process_input(backend, state_version, *root, data, assets, accounts);
 
-    #[cfg(not(feature = "fuzzing"))]
-    println!("Result: {:?}", result.clone());
-
     if let Some(new_root) = result {
+        #[cfg(not(feature = "fuzzing"))]
+        println!("izresult");
         let is_valid = {
             let trie_backend = sp_state_machine::TrieBackendBuilder::new(backend.clone(), new_root).build();
             trie_backend.storage(b":extrinsic_index").is_ok()
