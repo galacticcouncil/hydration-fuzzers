@@ -165,26 +165,35 @@ pub fn main() {
     let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
-    ziggy::fuzz!(|data: &[u8]| {
-        let (backend, state_version, mut root) =
-            scraper::construct_backend_from_snapshot::<Block>(get_snapshot())
-                .expect("Failed to create backend");
+    let (mut backend, state_version, mut root) =
+        scraper::construct_backend_from_snapshot::<Block>(get_snapshot())
+            .expect("Failed to create backend");
 
+    ziggy::fuzz!(|data: &[u8]| {
         let result = process_input(
-            backend.clone(),
+            &mut backend,
             state_version,
-            root,
+            &mut root,
             data,
             assets.clone(),
             accounts.clone(),
         );
 
-        if let Some(new_externalities) = result {
-            #[cfg(not(feature = "fuzzing"))]
-            println!("Persisting snapshot");
+        if let Some(new_root) = result {
+            println!("New root");
+            root = new_root;
 
-            scraper::save_externalities::<Block>(new_externalities, snapshot_path_for_instance().into()).expect("Failed to persist snapshot");
+            // Create externalities from current backend state and save
+            // let mut ext = scraper::create_externalities_with_backend::<Block>(backend.clone(), new_root, StateVersion::V1);
+
         }
+
+        // if let Some(new_externalities) = result {
+        //     #[cfg(not(feature = "fuzzing"))]
+        //     println!("Persisting snapshot");
+        //
+        //     scraper::save_externalities::<Block>(new_externalities, snapshot_path_for_instance().into()).expect("Failed to persist snapshot");
+        // }
 
         // if let Some(new_root) = result {
         //     println!("ssaving");
@@ -198,13 +207,13 @@ pub fn main() {
 }
 
 fn process_input(
-    backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
+    backend: &mut sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
     state_version: StateVersion,
-    root: H256,
+    root: &mut H256,
     data: &[u8],
     assets: Vec<u32>,
     accounts: Vec<AccountId>,
-) -> Option<TestExternalities> {
+) -> Option<H256> {
     // We build the list of extrinsics we will execute
     let mut extrinsic_data = data;
 
@@ -223,7 +232,7 @@ fn process_input(
 
     //let mut externalities = scraper::create_externalities_from_snapshot::<Block>(&snapshot).expect("Failed to create ext");
     let mut externalities =
-        scraper::create_externalities_with_backend::<Block>(backend, root, state_version);
+        scraper::create_externalities_with_backend::<Block>(backend.clone(), root.clone(), state_version);
 
     //let mut block: u32 = 8_338_378;
     let mut block: u32 = 0;
@@ -320,7 +329,11 @@ fn process_input(
         finalize_block(elapsed)
     });
 
-    Some(externalities)
+    // Return new root hash to persist state changes
+    externalities.execute_with(|| {
+        let header = System::finalize();
+        header.state_root().clone()
+    }).into()
 
     // After execution of all blocks.
     // Check that the consumer/provider state is valid.
