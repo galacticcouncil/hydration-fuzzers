@@ -32,6 +32,8 @@ use std::{
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::process;
+use sp_trie::PrefixedMemoryDB;
+use sp_core::Blake2Hasher;
 
 fn snapshot_path_for_instance() -> String {
     let id = std::env::var("INSTANCE_ID")
@@ -182,50 +184,34 @@ pub fn main() {
     ziggy::fuzz!(|data: &[u8]| {
         FUZZING_STATE.with(|state_cell| {
             let mut state = state_cell.borrow_mut();
-            let (ref mut backend, state_version, ref mut root) = &mut *state;
+            let (backend, state_version, root) = state.clone();
 
-            let result = process_input(
-                backend,
-                *state_version,
-                root,
-                data,
-                assets.clone(),
-                accounts.clone(),
-            );
+            if let Some((updated_backend, updated_root)) = process_input(backend, state_version, root, data, assets.clone(), accounts.clone()) {
+                *state = (updated_backend.clone(), state_version, updated_root);
 
-
-            let trie_backend = sp_state_machine::TrieBackendBuilder::new(backend.clone(), *root)
-                .build();
-
-            *root = *trie_backend.root();
-
-            // if let Some(new_externalities) = result {
-            //     #[cfg(not(feature = "fuzzing"))]
-            //     println!("Persisting snapshot");
-            //
-            //     scraper::save_externalities::<Block>(new_externalities, snapshot_path_for_instance().into()).expect("Failed to persist snapshot");
-            // }
-
-            // if let Some(new_root) = result {
-            //     println!("ssaving");
-            //     *root_cell.borrow_mut() = new_root;
-            //
-            //     // Create externalities from current backend state and save
-            //     let mut ext = scraper::create_externalities_with_backend::<Block>(backend.clone(), new_root, StateVersion::V1);
-            //
-            // }
+                // Persist updated backend and root to snapshot file after each fuzz run
+                let mut ext = scraper::create_externalities_with_backend::<Block>(
+                    updated_backend,
+                    updated_root,
+                    state_version,
+                );
+                scraper::save_externalities::<Block>(
+                    ext,
+                    snapshot_path_for_instance().into(),
+                ).expect("Failed to persist snapshot");
+            }
         });
     });
 }
 
 fn process_input(
-    backend: &mut sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
+    mut backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
     state_version: StateVersion,
-    root: &mut H256,
+    mut root: H256,
     data: &[u8],
     assets: Vec<u32>,
     accounts: Vec<AccountId>,
-) -> Option<H256> {
+) -> Option<(PrefixedMemoryDB<Blake2Hasher>, H256)> {
     // We build the list of extrinsics we will execute
     let mut extrinsic_data = data;
 
@@ -244,15 +230,14 @@ fn process_input(
 
     //let mut externalities = scraper::create_externalities_from_snapshot::<Block>(&snapshot).expect("Failed to create ext");
     let mut externalities =
-        scraper::create_externalities_with_backend::<Block>(backend.clone(), root.clone(), state_version);
+        scraper::create_externalities_with_backend::<Block>(backend.clone(), root, state_version);
 
     //let mut block: u32 = 8_338_378;
     let mut block: u32 = 0;
 
     externalities.execute_with(|| {
         block = System::current_block_number() + 1;
-        #[cfg(not(feature = "fuzzing"))]
-        println!("Starting snapshot block :{:?}", block);
+        println!("blocknr :{:?}", block);
     });
 
     assert_ne!(block, 0, "block number is 0");
@@ -341,11 +326,9 @@ fn process_input(
         finalize_block(elapsed)
     });
 
-    // Return new root hash to persist state changes
-    externalities.execute_with(|| {
-        let header = System::finalize();
-        header.state_root().clone()
-    }).into()
+    let new_root = externalities.execute_with(|| System::finalize().state_root().clone());
+
+    Some((backend, new_root))
 
     // After execution of all blocks.
     // Check that the consumer/provider state is valid.
