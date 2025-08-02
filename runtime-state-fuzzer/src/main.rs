@@ -30,7 +30,7 @@ use std::{
 };
 
 use std::cell::RefCell;
-
+use std::rc::Rc;
 use std::process;
 
 fn snapshot_path_for_instance() -> String {
@@ -254,6 +254,7 @@ fn process_input(
 
     externalities.execute_with(|| {
         block = System::current_block_number() + 1;
+        frame_system::Pallet::<FuzzedRuntime>::set_block_number(block);
         #[cfg(not(feature = "fuzzing"))]
         println!("Starting snapshot block :{:?}", block);
     });
