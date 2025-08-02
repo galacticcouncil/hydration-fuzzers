@@ -33,7 +33,7 @@ use std::cell::RefCell;
 use std::process;
 
 fn snapshot_path_for_instance() -> String {
-    let id = std::env::var("AFL_WORKER_ID")
+    let id = std::env::var("AFL_FUZZER_ID")
         .unwrap_or_else(|_| process::id().to_string()); // fallback
 
     format!("pid_snapshots/snapshot-{}.bin", id)
@@ -182,7 +182,7 @@ pub fn main() {
         BACKEND.with(|backend_cell| {
             ROOT.with(|root_cell| {
                 #[cfg(not(feature = "fuzzing"))]
-                println!("AFL ID: {:?}", std::env::var("AFL_WORKER_ID"));
+                println!("AFL ID: {:?}", std::env::var("AFL_FUZZER_ID"));
 
                 let mut backend = backend_cell.borrow_mut();
                 let mut root = *root_cell.borrow();
