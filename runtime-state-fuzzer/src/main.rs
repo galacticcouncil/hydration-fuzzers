@@ -193,14 +193,11 @@ pub fn main() {
                 accounts.clone(),
             );
 
-            if let Some(new_root) = result {
-                println!("New root");
-                *root = new_root;
 
-                // Create externalities from current backend state and save
-                // let mut ext = scraper::create_externalities_with_backend::<Block>(backend.clone(), new_root, StateVersion::V1);
+            let trie_backend = sp_state_machine::TrieBackendBuilder::new(backend.clone(), *root)
+                .build();
 
-            }
+            *root = *trie_backend.root();
 
             // if let Some(new_externalities) = result {
             //     #[cfg(not(feature = "fuzzing"))]
