@@ -33,17 +33,17 @@ use std::cell::RefCell;
 use std::process;
 
 fn snapshot_path_for_instance() -> String {
-    let id = std::env::var("AFL_FUZZER_ID")
-        .unwrap_or_else(|_| process::id().to_string()); // fallback
+    let id = std::env::var("INSTANCE_ID")
+        .expect("INSTANCE_ID is missing");
 
-    format!("pid_snapshots/snapshot-{}.bin", id)
+    format!("data/instance_snapshots/snapshot-{}.bin", id)
 }
 
 fn get_snapshot() -> scraper::Snapshot<Block> {
     // Try loading the specific snapshot for the current AFL instance
     // If missing, load the initial snapshot
     let snapshot_bytes = std::fs::read(snapshot_path_for_instance())
-        .or_else(|_| std::fs::read(SNAPSHOT_PATH))
+        .or_else(|_| std::fs::read(INITIAL_SNAPSHOT_PATH))
         .expect("Missing snapshot file");
     let snapshot = scraper::get_snapshot_from_bytes::<Block>(snapshot_bytes)
         .expect("Failed to create snapshot");
@@ -76,7 +76,7 @@ const MAX_EXTRINSICS_PER_BLOCK: usize = 0;
 const MAX_TIME_FOR_BLOCK: u64 = 6;
 const MAX_BLOCK_LAPSE: u32 = 1000;
 const DELIMITER: [u8; 8] = [42; 8];
-const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
+const INITIAL_SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
 
 #[cfg(not(feature = "fuzzing"))]
 const BLACKLISTED_CALLS: [&str; 8] = [
