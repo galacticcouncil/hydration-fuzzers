@@ -19,6 +19,7 @@ use sp_runtime::{
     Digest, DigestItem, StateVersion,
 };
 use sp_state_machine::TrieBackendBuilder;
+use sp_io::TestExternalities;
 use sp_state_machine::Backend as _;
 use std::{
     collections::BTreeMap,
@@ -49,20 +50,6 @@ fn get_snapshot() -> scraper::Snapshot<Block> {
         .expect("Failed to create snapshot");
 
     snapshot
-}
-
-thread_local! {
-    static BACKEND: RefCell<sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>> = RefCell::new({
-        let (backend, _, _) = scraper::construct_backend_from_snapshot::<Block>(get_snapshot())
-            .expect("Failed to create backend");
-        backend
-    });
-
-    static ROOT: RefCell<H256> = RefCell::new({
-        let (_, _, root) = scraper::construct_backend_from_snapshot::<Block>(get_snapshot())
-            .expect("Failed to create backend");
-        root
-    });
 }
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
@@ -179,78 +166,45 @@ pub fn main() {
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
     ziggy::fuzz!(|data: &[u8]| {
-        BACKEND.with(|backend_cell| {
-            ROOT.with(|root_cell| {
-                #[cfg(not(feature = "fuzzing"))]
-                println!("AFL ID: {:?}", std::env::var("AFL_FUZZER_ID"));
+        let (backend, state_version, mut root) =
+            scraper::construct_backend_from_snapshot::<Block>(get_snapshot())
+                .expect("Failed to create backend");
 
-                let mut backend = backend_cell.borrow_mut();
-                let mut root = *root_cell.borrow();
+        let result = process_input(
+            backend.clone(),
+            state_version,
+            root,
+            data,
+            assets.clone(),
+            accounts.clone(),
+        );
 
-                let result = process_input_stateful(
-                    &mut backend,
-                    state_version,
-                    &mut root,
-                    data,
-                    assets.clone(),
-                    accounts.clone(),
-                );
+        if let Some(new_externalities) = result {
+            #[cfg(not(feature = "fuzzing"))]
+            println!("Persisting snapshot");
 
-                if let Some(new_root) = result {
-                    println!("ssaving");
-                    *root_cell.borrow_mut() = new_root;
+            scraper::save_externalities::<Block>(new_externalities, snapshot_path_for_instance().into()).expect("Failed to persist snapshot");
+        }
 
-                    // Create externalities from current backend state and save
-                    let mut ext = scraper::create_externalities_with_backend::<Block>(backend.clone(), new_root, StateVersion::V1);
-                    scraper::save_externalities::<Block>(ext, snapshot_path_for_instance().into()).expect("Failed to persist snapshot");
-                }
-            });
-        });
+        // if let Some(new_root) = result {
+        //     println!("ssaving");
+        //     *root_cell.borrow_mut() = new_root;
+        //
+        //     // Create externalities from current backend state and save
+        //     let mut ext = scraper::create_externalities_with_backend::<Block>(backend.clone(), new_root, StateVersion::V1);
+        //
+        // }
     });
 }
 
-
-fn process_input_stateful(
-    backend: &mut sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
-    state_version: StateVersion,
-    root: &mut H256,
-    data: &[u8],
-    assets: Vec<u32>,
-    accounts: Vec<AccountId>,
-) -> Option<H256> {
-    let result = process_input(backend, state_version, *root, data, assets, accounts);
-
-    if let Some(new_root) = result {
-        // #[cfg(not(feature = "fuzzing"))]
-        // println!("izresult");
-        // let is_valid = {
-        //     let trie_backend = sp_state_machine::TrieBackendBuilder::new(backend.clone(), new_root).build();
-        //     trie_backend.storage(b":extrinsic_index").is_ok()
-        // };
-        //
-        // if is_valid {
-        //     #[cfg(not(feature = "fuzzing"))]
-        //     println!("iz_valid");
-        //
-        //     return Some(new_root);
-        // } else {
-        //     #[cfg(not(feature = "fuzzing"))]
-        //     eprintln!("⚠️  Rejected invalid root: {new_root:?}");
-        // }
-        return Some(new_root);
-    }
-
-    None
-}
-
 fn process_input(
-    backend: &mut sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
+    backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
     state_version: StateVersion,
     root: H256,
     data: &[u8],
     assets: Vec<u32>,
     accounts: Vec<AccountId>,
-) -> Option<H256> {
+) -> Option<TestExternalities> {
     // We build the list of extrinsics we will execute
     let mut extrinsic_data = data;
 
@@ -269,7 +223,7 @@ fn process_input(
 
     //let mut externalities = scraper::create_externalities_from_snapshot::<Block>(&snapshot).expect("Failed to create ext");
     let mut externalities =
-        scraper::create_externalities_with_backend::<Block>(backend.clone(), root, state_version);
+        scraper::create_externalities_with_backend::<Block>(backend, root, state_version);
 
     //let mut block: u32 = 8_338_378;
     let mut block: u32 = 0;
@@ -366,12 +320,8 @@ fn process_input(
         finalize_block(elapsed)
     });
 
-    // Return new root hash to persist state changes
-    externalities.execute_with(|| {
-        let header = System::finalize();
-        header.state_root().clone()
-    }).into()
-    
+    Some(externalities)
+
     // After execution of all blocks.
     // Check that the consumer/provider state is valid.
     // for acc in frame_system::Account::<FuzzedRuntime>::iter() {
