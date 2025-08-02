@@ -52,6 +52,16 @@ fn get_snapshot() -> scraper::Snapshot<Block> {
     snapshot
 }
 
+thread_local! {
+    static FUZZING_STATE: RefCell<(sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>, StateVersion, H256)> = {
+        let snapshot = get_snapshot();
+        let (backend, state_version, root) =
+            scraper::construct_backend_from_snapshot::<Block>(snapshot)
+                .expect("Failed to create backend");
+        RefCell::new((backend, state_version, root))
+    };
+}
+
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
 type RuntimeOrigin = <FuzzedRuntime as frame_system::Config>::RuntimeOrigin;
@@ -170,39 +180,44 @@ pub fn main() {
             .expect("Failed to create backend");
 
     ziggy::fuzz!(|data: &[u8]| {
-        let result = process_input(
-            &mut backend,
-            state_version,
-            &mut root,
-            data,
-            assets.clone(),
-            accounts.clone(),
-        );
+        FUZZING_STATE.with(|state_cell| {
+            let mut state = state_cell.borrow_mut();
+            let (ref mut backend, state_version, ref mut root) = &mut *state;
 
-        if let Some(new_root) = result {
-            println!("New root");
-            root = new_root;
+            let result = process_input(
+                backend,
+                *state_version,
+                root,
+                data,
+                assets.clone(),
+                accounts.clone(),
+            );
 
-            // Create externalities from current backend state and save
-            // let mut ext = scraper::create_externalities_with_backend::<Block>(backend.clone(), new_root, StateVersion::V1);
+            if let Some(new_root) = result {
+                println!("New root");
+                *root = new_root;
 
-        }
+                // Create externalities from current backend state and save
+                // let mut ext = scraper::create_externalities_with_backend::<Block>(backend.clone(), new_root, StateVersion::V1);
 
-        // if let Some(new_externalities) = result {
-        //     #[cfg(not(feature = "fuzzing"))]
-        //     println!("Persisting snapshot");
-        //
-        //     scraper::save_externalities::<Block>(new_externalities, snapshot_path_for_instance().into()).expect("Failed to persist snapshot");
-        // }
+            }
 
-        // if let Some(new_root) = result {
-        //     println!("ssaving");
-        //     *root_cell.borrow_mut() = new_root;
-        //
-        //     // Create externalities from current backend state and save
-        //     let mut ext = scraper::create_externalities_with_backend::<Block>(backend.clone(), new_root, StateVersion::V1);
-        //
-        // }
+            // if let Some(new_externalities) = result {
+            //     #[cfg(not(feature = "fuzzing"))]
+            //     println!("Persisting snapshot");
+            //
+            //     scraper::save_externalities::<Block>(new_externalities, snapshot_path_for_instance().into()).expect("Failed to persist snapshot");
+            // }
+
+            // if let Some(new_root) = result {
+            //     println!("ssaving");
+            //     *root_cell.borrow_mut() = new_root;
+            //
+            //     // Create externalities from current backend state and save
+            //     let mut ext = scraper::create_externalities_with_backend::<Block>(backend.clone(), new_root, StateVersion::V1);
+            //
+            // }
+        });
     });
 }
 
