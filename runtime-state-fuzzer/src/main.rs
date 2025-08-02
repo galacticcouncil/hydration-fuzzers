@@ -32,29 +32,34 @@ use std::cell::RefCell;
 
 use std::process;
 
-fn snapshot_path_for_pid() -> String {
-    format!("pid_snapshots/snapshot-{}.bin", process::id())
+fn snapshot_path_for_instance() -> String {
+    let id = std::env::var("AFL_WORKER_ID")
+        .unwrap_or_else(|_| process::id().to_string()); // fallback
+
+    format!("pid_snapshots/snapshot-{}.bin", id)
+}
+
+fn get_snapshot() -> scraper::Snapshot<Block> {
+    // Try loading the specific snapshot for the current AFL instance
+    // If missing, load the initial snapshot
+    let snapshot_bytes = std::fs::read(snapshot_path_for_instance())
+        .or_else(|_| std::fs::read(SNAPSHOT_PATH))
+        .expect("Missing snapshot file");
+    let snapshot = scraper::get_snapshot_from_bytes::<Block>(snapshot_bytes)
+        .expect("Failed to create snapshot");
+
+    snapshot
 }
 
 thread_local! {
     static BACKEND: RefCell<sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>> = RefCell::new({
-        let snapshot_bytes = std::fs::read(snapshot_path_for_pid())
-            .or_else(|_| std::fs::read(SNAPSHOT_PATH))
-            .expect("Missing snapshot file");
-        let snapshot = scraper::get_snapshot_from_bytes::<Block>(snapshot_bytes)
-            .expect("Failed to create snapshot");
-        let (backend, _, _) = scraper::construct_backend_from_snapshot::<Block>(snapshot)
+        let (backend, _, _) = scraper::construct_backend_from_snapshot::<Block>(get_snapshot())
             .expect("Failed to create backend");
         backend
     });
 
     static ROOT: RefCell<H256> = RefCell::new({
-        let snapshot_bytes = std::fs::read(snapshot_path_for_pid())
-            .or_else(|_| std::fs::read(SNAPSHOT_PATH))
-            .expect("Missing snapshot file");
-        let snapshot = scraper::get_snapshot_from_bytes::<Block>(snapshot_bytes)
-            .expect("Failed to create snapshot");
-        let (_, _, root) = scraper::construct_backend_from_snapshot::<Block>(snapshot)
+        let (_, _, root) = scraper::construct_backend_from_snapshot::<Block>(get_snapshot())
             .expect("Failed to create backend");
         root
     });
@@ -177,7 +182,7 @@ pub fn main() {
         BACKEND.with(|backend_cell| {
             ROOT.with(|root_cell| {
                 #[cfg(not(feature = "fuzzing"))]
-                println!("PID :{:?}", process::id());
+                println!("AFL ID: {:?}", std::env::var("AFL_WORKER_ID"));
 
                 let mut backend = backend_cell.borrow_mut();
                 let mut root = *root_cell.borrow();
@@ -197,7 +202,7 @@ pub fn main() {
 
                     // Create externalities from current backend state and save
                     let mut ext = scraper::create_externalities_with_backend::<Block>(backend.clone(), new_root, StateVersion::V1);
-                    scraper::save_externalities::<Block>(ext, snapshot_path_for_pid().into()).expect("Failed to persist snapshot");
+                    scraper::save_externalities::<Block>(ext, snapshot_path_for_instance().into()).expect("Failed to persist snapshot");
                 }
             });
         });
