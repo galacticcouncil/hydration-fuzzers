@@ -58,8 +58,6 @@ const MAX_BLOCK_LAPSE: u32 = 1000;
 // Extrinsic delimiter: `********`
 const DELIMITER: [u8; 8] = [42; 8];
 
-const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
-
 // We won't analyse those native Substrate pallets
 #[cfg(not(feature = "fuzzing"))]
 const BLACKLISTED_CALLS: [&str; 8] = [
