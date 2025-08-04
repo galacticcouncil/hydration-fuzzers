@@ -10,6 +10,7 @@ use frame_support::{
     weights::constants::WEIGHT_REF_TIME_PER_SECOND,
 };
 use hydradx_runtime::*;
+use runtime_mock::hydradx_mocked_runtime;
 use primitives::constants::time::SLOT_DURATION;
 use sp_consensus_aura::{Slot, AURA_ENGINE_ID};
 use sp_core::H256;
@@ -25,6 +26,7 @@ use std::{
     path::PathBuf,
     time::{Duration, Instant},
 };
+use sp_io::TestExternalities;
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
@@ -155,21 +157,11 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
 }
 
 pub fn main() {
-    let original_data = std::fs::read(SNAPSHOT_PATH).unwrap();
-    let snapshot = scraper::get_snapshot_from_bytes::<Block>(original_data)
-        .expect("Failed to create snapshot");
-    let (backend, state_version, root) =
-        scraper::construct_backend_from_snapshot::<Block>(snapshot)
-            .expect("Failed to create backend");
-
     let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
     ziggy::fuzz!(|data: &[u8]| {
         process_input(
-            backend.clone(),
-            state_version,
-            root,
             data,
             assets.clone(),
             accounts.clone(),
@@ -178,9 +170,6 @@ pub fn main() {
 }
 
 fn process_input(
-    backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
-    state_version: StateVersion,
-    root: H256,
     data: &[u8],
     assets: Vec<u32>,
     accounts: Vec<AccountId>,
@@ -201,9 +190,17 @@ fn process_input(
         return;
     }
 
-    //let mut externalities = scraper::create_externalities_from_snapshot::<Block>(&snapshot).expect("Failed to create ext");
-    let mut externalities =
-        scraper::create_externalities_with_backend::<Block>(backend.clone(), root, state_version);
+    let mut externalities = hydradx_mocked_runtime();
+
+    // load AssetIds
+    let mut assets: Vec<u32> = Vec::new();
+    externalities.execute_with(|| {
+        // lets assert that the mock is correctly setup, just in case
+        let asset_ids = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
+        for asset_id in asset_ids {
+            assets.push(asset_id);
+        }
+    });
 
     //let mut block: u32 = 8_338_378;
     let mut block: u32 = 0;
