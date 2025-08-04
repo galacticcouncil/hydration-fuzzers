@@ -175,14 +175,70 @@ fn process_input(
     // We build the list of extrinsics we will execute
     let mut extrinsic_data = data;
 
-    let extrinsics: Vec<(u8, u8, RuntimeCall)> =
-        iter::from_fn(|| DecodeLimit::decode_with_depth_limit(64, &mut extrinsic_data).ok())
-            .filter(|(_, _, x): &(_, _, RuntimeCall)| {
-                !recursively_find_call(x.clone(), |call| {
-                    matches!(call.clone(), RuntimeCall::System(_))
-                })
-            })
-            .collect();
+    // Min lengths required for the data
+    // - lapse is u32 (4 bytes),
+    // - origin is u16 (2 bytes)
+    // - structured fuzzer (1 byte)
+    // -> 7 bytes minimum
+    let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iter::from_fn(|| {
+            // We have reached the limit of block we want to decode
+            // #[allow(clippy::absurd_extreme_comparisons)]
+            // if MAX_BLOCKS_PER_INPUT != 0 && block_count >= MAX_BLOCKS_PER_INPUT {
+            //     return None;
+            // }
+            // Min lengths required for the data
+            // - lapse is u32 (4 bytes),
+            // - origin is u16 (2 bytes)
+            // - structured fuzzer (1 byte)
+            // -> 7 bytes minimum
+            let min_data_len = 4 + 2 + 1;
+            if data.len() <= min_data_len {
+                return None;
+            }
+            let lapse: u32 = u32::from_ne_bytes(data[0..4].try_into().unwrap());
+            let origin: usize = u16::from_ne_bytes(data[4..6].try_into().unwrap()) as usize;
+            let specific_extrinsic: u8 = data[6];
+            let mut encoded_extrinsic: &[u8] = &data[7..];
+
+            // If the lapse is in the range [1, MAX_BLOCK_LAPSE] it is valid.
+            let maybe_lapse = match lapse {
+                1..=MAX_BLOCK_LAPSE => Some(lapse),
+                _ => None,
+            };
+            // We have reached the limit of extrinsics for this block
+            // #[allow(clippy::absurd_extreme_comparisons)]
+            // if maybe_lapse.is_none()
+            //     && MAX_EXTRINSICS_PER_BLOCK != 0
+            //     && extrinsics_in_block >= MAX_EXTRINSICS_PER_BLOCK
+            // {
+            //     return None;
+            // }
+
+            let maybe_extrinsic =
+                if let Some(extrinsic) = try_specific_extrinsic(specific_extrinsic, encoded_extrinsic, &assets) {
+                    Ok(extrinsic)
+                } else {
+                    DecodeLimit::decode_all_with_depth_limit(32, &mut encoded_extrinsic)
+                };
+
+            if let Ok(decoded_extrinsic) = maybe_extrinsic {
+                if maybe_lapse.is_some() {
+                    // block_count += 1;
+                    // extrinsics_in_block = 1;
+                } else {
+                    // extrinsics_in_block += 1;
+                }
+                // We have reached the limit of block we want to decode
+                // if MAX_BLOCKS_PER_INPUT != 0 && block_count >= MAX_BLOCKS_PER_INPUT {
+                //     return None;
+                // }
+
+                Some((maybe_lapse, origin, decoded_extrinsic))
+            } else {
+                None
+            }
+        })
+        .collect();
 
     if extrinsics.is_empty() {
         return;
@@ -206,7 +262,7 @@ fn process_input(
     externalities.execute_with(|| {
         block = System::current_block_number() + 1;
         #[cfg(not(feature = "fuzzing"))]
-        println!("Starting snapshot block :{:?}", block);
+        println!("Fuzzing block {:?}", block);
     });
 
     assert_ne!(block, 0, "block number is 0");
@@ -245,14 +301,14 @@ fn process_input(
                 continue;
             }
             // If lapse is positive, then we finalize the block and initialize a new one.
-            if lapse > 0 {
+            if lapse > Some(0) {
                 println!("  lapse:       {:?}", lapse);
 
                 // Finalize current block
                 let prev_header = finalize_block(elapsed);
 
                 // We update our state variables
-                block += u32::from(lapse);
+                block += u32::from(lapse.unwrap());
                 weight = Weight::zero();
                 elapsed = Duration::ZERO;
 
