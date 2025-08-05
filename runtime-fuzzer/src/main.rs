@@ -172,15 +172,14 @@ fn process_input(
     assets: Vec<u32>,
     accounts: Vec<AccountId>,
 ) {
-    // We build the list of extrinsics we will execute
-    let mut extrinsic_data = data;
+    let iteratable = Data {
+        data,
+        pointer: 0,
+        size: 0,
+    };
 
-    // Min lengths required for the data
-    // - lapse is u32 (4 bytes),
-    // - origin is u16 (2 bytes)
-    // - structured fuzzer (1 byte)
-    // -> 7 bytes minimum
-    let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iter::from_fn(|| {
+    let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
+        .filter_map(|data| {
             // We have reached the limit of block we want to decode
             // #[allow(clippy::absurd_extreme_comparisons)]
             // if MAX_BLOCKS_PER_INPUT != 0 && block_count >= MAX_BLOCKS_PER_INPUT {
@@ -205,14 +204,6 @@ fn process_input(
                 1..=MAX_BLOCK_LAPSE => Some(lapse),
                 _ => None,
             };
-            // We have reached the limit of extrinsics for this block
-            // #[allow(clippy::absurd_extreme_comparisons)]
-            // if maybe_lapse.is_none()
-            //     && MAX_EXTRINSICS_PER_BLOCK != 0
-            //     && extrinsics_in_block >= MAX_EXTRINSICS_PER_BLOCK
-            // {
-            //     return None;
-            // }
 
             let maybe_extrinsic =
                 if let Some(extrinsic) = try_specific_extrinsic(specific_extrinsic, encoded_extrinsic, &assets) {
@@ -222,17 +213,6 @@ fn process_input(
                 };
 
             if let Ok(decoded_extrinsic) = maybe_extrinsic {
-                if maybe_lapse.is_some() {
-                    // block_count += 1;
-                    // extrinsics_in_block = 1;
-                } else {
-                    // extrinsics_in_block += 1;
-                }
-                // We have reached the limit of block we want to decode
-                // if MAX_BLOCKS_PER_INPUT != 0 && block_count >= MAX_BLOCKS_PER_INPUT {
-                //     return None;
-                // }
-
                 Some((maybe_lapse, origin, decoded_extrinsic))
             } else {
                 None
@@ -350,21 +330,6 @@ fn process_input(
         // We end the final block
         finalize_block(elapsed)
     });
-
-    // After execution of all blocks.
-    // Check that the consumer/provider state is valid.
-    // for acc in frame_system::Account::<FuzzedRuntime>::iter() {
-    //     let acc_consumers = acc.1.consumers;
-    //     let acc_providers = acc.1.providers;
-    //     if acc_consumers > 0 && acc_providers == 0 {
-    //         panic!("Invalid state");
-    //     }
-    // }
-    //
-    // #[cfg(not(feature = "fuzzing"))]
-    // println!("Running integrity tests\n");
-    // // We run all developer-defined integrity tests
-    // <AllPalletsWithSystem as IntegrityTest>::integrity_test();
 }
 
 fn initialize_block(block: u32, prev_header: Option<&Header>) {
