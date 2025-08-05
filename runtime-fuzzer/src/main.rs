@@ -2,10 +2,11 @@ extern crate polkadot_primitives;
 
 use codec::{DecodeLimit, Encode};
 use cumulus_primitives_core::relay_chain::Header;
-use frame_support::traits::Time;
+use frame_support::traits::{StorageInfo, StorageInfoTrait, Time};
 use frame_support::{
     dispatch::GetDispatchInfo,
     pallet_prelude::Weight,
+    traits::{IntegrityTest, TryState, TryStateSelect},
     weights::constants::WEIGHT_REF_TIME_PER_SECOND,
 };
 use hydradx_runtime::*;
@@ -20,8 +21,12 @@ use sp_runtime::{
 };
 use std::{
     collections::BTreeMap,
+    io::Write,
+    iter,
+    path::PathBuf,
     time::{Duration, Instant},
 };
+use sp_io::TestExternalities;
 
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
@@ -40,12 +45,40 @@ const MAX_BLOCKS_PER_INPUT: usize = 32;
 /// it back to 0 once you have good coverage.
 const MAX_EXTRINSICS_PER_BLOCK: usize = 0;
 
+/// Max number of seconds a block should run for.
+#[cfg(not(feature = "fuzzing"))]
+const MAX_TIME_FOR_BLOCK: u64 = 6;
+
 // We do not skip more than DEFAULT_STORAGE_PERIOD to avoid pallet_transaction_storage from
 // panicking on finalize.
-const MAX_BLOCK_LAPSE: u32 = 1_000;
+// Set to number of blocks in two months
+//const MAX_BLOCK_LAPSE: u32 = 864_000;
+const MAX_BLOCK_LAPSE: u32 = 1000;
 
 // Extrinsic delimiter: `********`
 const DELIMITER: [u8; 8] = [42; 8];
+
+// We won't analyse those native Substrate pallets
+#[cfg(not(feature = "fuzzing"))]
+const BLACKLISTED_CALLS: [&str; 8] = [
+    "RuntimeCall::System",
+    "RuntimeCall::Utility",
+    "RuntimeCall::Proxy",
+    "RuntimeCall::Uniques",
+    "RuntimeCall::Balances",
+    "RuntimeCall::Timestamp",
+    // to prevent false negatives from debug_assert_ne
+    "RuntimeCall::XTokens",
+    "RuntimeCall::Referenda",
+];
+
+const OMNIPOOL_ASSETS: [u32; 74] = [
+    100, 1000771, 0, 10, 1001, 4, 21, 28, 20, 1000198, 30, 101, 34, 16, 11, 1000085, 1000099,
+    1000766, 14, 1006, 6, 1000796, 19, 1000795, 35, 36, 31, 33, 15, 1000794, 2, 13, 1002, 32,
+    1000745, 27, 1000625, 29, 102, 1000753, 5, 18, 7, 1000624, 26, 3370, 1003, 1000190, 690, 22,
+    1005, 24, 1000626, 8, 1000809, 1000100, 1004, 1000767, 1000765, 1, 252525, 12, 1000081, 3, 17,
+    25, 1000746, 69, 23, 1000851, 9, 1000752, 1000189, 1007,
+];
 
 struct Data<'a> {
     data: &'a [u8],
@@ -122,11 +155,13 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
 }
 
 pub fn main() {
+    let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
     ziggy::fuzz!(|data: &[u8]| {
         process_input(
             data,
+            assets.clone(),
             accounts.clone(),
         );
     });
@@ -134,6 +169,7 @@ pub fn main() {
 
 fn process_input(
     data: &[u8],
+    assets: Vec<u32>,
     accounts: Vec<AccountId>,
 ) {
     let iteratable = Data {
@@ -142,19 +178,7 @@ fn process_input(
         size: 0,
     };
 
-    let mut externalities = hydradx_mocked_runtime();
-
-    // load AssetIds
-    let mut assets: Vec<u32> = Vec::new();
-    externalities.execute_with(|| {
-        // lets assert that the mock is correctly setup, just in case
-        let asset_ids = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
-        for asset_id in asset_ids {
-            assets.push(asset_id);
-        }
-    });
-
-    let extrinsics: Vec<(u32, usize, RuntimeCall)> = iteratable
+    let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
         .filter_map(|data| {
             // We have reached the limit of block we want to decode
             // #[allow(clippy::absurd_extreme_comparisons)]
@@ -170,41 +194,47 @@ fn process_input(
             if data.len() <= min_data_len {
                 return None;
             }
-            let mut lapse: u32 = u32::from_ne_bytes(data[0..4].try_into().unwrap());
+            let lapse: u32 = u32::from_ne_bytes(data[0..4].try_into().unwrap());
             let origin: usize = u16::from_ne_bytes(data[4..6].try_into().unwrap()) as usize;
             let specific_extrinsic: u8 = data[6];
             let mut encoded_extrinsic: &[u8] = &data[7..];
 
             // If the lapse is in the range [1, MAX_BLOCK_LAPSE] it is valid.
-            lapse = match lapse {
-                1..=MAX_BLOCK_LAPSE => lapse,
-                _ => 0,
+            let maybe_lapse = match lapse {
+                1..=MAX_BLOCK_LAPSE => Some(lapse),
+                _ => None,
             };
 
-            let mut extrinsics_from_chunk = Vec::new();
+            let maybe_extrinsic =
+                if let Some(extrinsic) = try_specific_extrinsic(specific_extrinsic, encoded_extrinsic, &assets) {
+                    Ok(extrinsic)
+                } else {
+                    DecodeLimit::decode_all_with_depth_limit(32, &mut encoded_extrinsic)
+                };
 
-            // Always try to generate random extrinsic
-            if let Ok(random_extrinsic) = DecodeLimit::decode_all_with_depth_limit(32, &mut encoded_extrinsic) {
-                extrinsics_from_chunk.push((lapse, origin, random_extrinsic));
-            }
-
-            // Additionally try to inject structured extrinsic
-            if let Some(structured_extrinsic) = try_specific_extrinsic(specific_extrinsic, encoded_extrinsic, &assets) {
-                extrinsics_from_chunk.push((lapse, origin, structured_extrinsic));
-            }
-
-            if extrinsics_from_chunk.is_empty() {
-                None
+            if let Ok(decoded_extrinsic) = maybe_extrinsic {
+                Some((maybe_lapse, origin, decoded_extrinsic))
             } else {
-                Some(extrinsics_from_chunk)
+                None
             }
         })
-        .flatten()
         .collect();
 
     if extrinsics.is_empty() {
         return;
     }
+
+    let mut externalities = hydradx_mocked_runtime();
+
+    // load AssetIds
+    let mut assets: Vec<u32> = Vec::new();
+    externalities.execute_with(|| {
+        // lets assert that the mock is correctly setup, just in case
+        let asset_ids = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
+        for asset_id in asset_ids {
+            assets.push(asset_id);
+        }
+    });
 
     //let mut block: u32 = 8_338_378;
     let mut block: u32 = 0;
@@ -229,6 +259,7 @@ fn process_input(
     };
 
     externalities.execute_with(|| {
+        // initialize_block(block, None);
         initialize_block(block, Some(&dummy_header));
 
         // Calls that need to be executed in the first block go here
@@ -250,14 +281,14 @@ fn process_input(
                 continue;
             }
             // If lapse is positive, then we finalize the block and initialize a new one.
-            if lapse > 0 {
+            if lapse > Some(0) {
                 println!("  lapse:       {:?}", lapse);
 
                 // Finalize current block
                 let prev_header = finalize_block(elapsed);
 
                 // We update our state variables
-                block += u32::from(lapse);
+                block += u32::from(lapse.unwrap());
                 weight = Weight::zero();
                 elapsed = Duration::ZERO;
 
