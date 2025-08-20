@@ -184,6 +184,16 @@ fn process_input(
         size: 0,
     };
 
+    // load AssetIds
+    let mut assets: Vec<u32> = Vec::new();
+    externalities.execute_with(|| {
+        // lets assert that the mock is correctly setup, just in case
+        let asset_ids = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
+        for asset_id in asset_ids {
+            assets.push(asset_id);
+        }
+    });
+
     let mut block_count = 0;
     let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
         .filter_map(|data| {
@@ -232,16 +242,6 @@ fn process_input(
     if extrinsics.is_empty() {
         return;
     }
-
-    // load AssetIds
-    let mut assets: Vec<u32> = Vec::new();
-    externalities.execute_with(|| {
-        // lets assert that the mock is correctly setup, just in case
-        let asset_ids = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
-        for asset_id in asset_ids {
-            assets.push(asset_id);
-        }
-    });
 
     //let mut block: u32 = 8_338_378;
     let mut block: u32 = 0;
