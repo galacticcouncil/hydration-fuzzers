@@ -197,10 +197,10 @@ fn process_input(
     let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
         .filter_map(|data| {
             // We have reached the limit of block we want to decode
-            // #[allow(clippy::absurd_extreme_comparisons)]
-            // if MAX_BLOCKS_PER_INPUT != 0 && block_count >= MAX_BLOCKS_PER_INPUT {
-            //     return None;
-            // }
+            #[allow(clippy::absurd_extreme_comparisons)]
+            if MAX_BLOCKS_PER_INPUT != 0 && block_count >= MAX_BLOCKS_PER_INPUT {
+                return None;
+            }
             // Min lengths required for the data
             // - lapse is u32 (4 bytes),
             // - origin is u16 (2 bytes)
