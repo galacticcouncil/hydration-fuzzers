@@ -273,15 +273,6 @@ fn process_input(
         for (lapse, origin, extrinsic) in extrinsics {
             if recursively_find_call(extrinsic.clone(), |call| {
                 matches!(&call, RuntimeCall::XTokens(..))
-                    || matches!(call.clone(), RuntimeCall::PolkadotXcm(pallet_xcm::Call::execute { message, .. })
-                        if matches!(message.as_ref(), staging_xcm::VersionedXcm::V4(staging_xcm::v4::Xcm(msg))
-                            if msg.iter().any(|m| matches!(m, staging_xcm::opaque::v4::prelude::BuyExecution { fees: staging_xcm::v4::Asset { fun, .. }, .. }
-                                if *fun == staging_xcm::v4::Fungibility::Fungible(0)
-                            ))
-                        )
-                    )
-                    || matches!(&call, RuntimeCall::Timestamp(..))
-                    || matches!(&call, RuntimeCall::ParachainSystem(..))
             }) {
                 #[cfg(not(feature = "fuzzing"))]
                 println!("    Skipping because of custom filter");
