@@ -178,16 +178,6 @@ fn process_input(
         externalities = hydradx_mocked_runtime();
     }
 
-    // load AssetIds
-    let mut assets: Vec<u32> = Vec::new();
-    externalities.execute_with(|| {
-        // lets assert that the mock is correctly setup, just in case
-        let asset_ids = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
-        for asset_id in asset_ids {
-            assets.push(asset_id);
-        }
-    });
-
     let iteratable = Data {
         data,
         pointer: 0,
@@ -252,6 +242,7 @@ fn process_input(
 
     //let mut block: u32 = 8_338_378;
     let mut block: u32 = 0;
+    let mut block_count = 0;
 
     externalities.execute_with(|| {
         block = System::current_block_number() + 1;
@@ -297,6 +288,7 @@ fn process_input(
             // If lapse is positive, then we finalize the block and initialize a new one.
             if lapse > Some(0) {
                 println!("  lapse:       {:?}", lapse);
+                block_count += 1;
 
                 // Finalize current block
                 let prev_header = finalize_block(elapsed);
