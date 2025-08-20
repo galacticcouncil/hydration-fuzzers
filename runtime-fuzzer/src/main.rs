@@ -292,9 +292,7 @@ fn process_input(
                 println!("  lapse:       {:?}", lapse);
 
                 // Finalize current block
-                println!("finalizing block");
-                let prev_header = Executive::finalize_block();
-                // let prev_header = finalize_block(elapsed);
+                let prev_header = finalize_block(elapsed);
 
                 // We update our state variables
                 block += u32::from(lapse.unwrap());
@@ -320,7 +318,7 @@ fn process_input(
             #[cfg(not(feature = "fuzzing"))]
             println!("    call:       {extrinsic:?}");
 
-            // let now = Instant::now(); // We get the current time for timing purposes.
+            let now = Instant::now(); // We get the current time for timing purposes.
             #[allow(unused_variables)]
             // let's also dispatch as None, but only 15% of the time.
             let res = if origin % 100 < 15 {
@@ -330,14 +328,14 @@ fn process_input(
                     .clone()
                     .dispatch(RuntimeOrigin::signed(origin_account))
             };
-            // elapsed += now.elapsed();
+            elapsed += now.elapsed();
 
             #[cfg(not(feature = "fuzzing"))]
             println!("    result:     {:?}", &res);
         }
 
         // We end the final block
-        Executive::finalize_block();
+        finalize_block(elapsed)
     });
 }
 
