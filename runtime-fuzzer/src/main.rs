@@ -184,6 +184,7 @@ fn process_input(
         size: 0,
     };
 
+    let mut block_count = 0;
     let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
         .filter_map(|data| {
             // We have reached the limit of block we want to decode
@@ -210,6 +211,8 @@ fn process_input(
                 1..=MAX_BLOCK_LAPSE => Some(lapse),
                 _ => None,
             };
+
+            if maybe_lapse.is_some() { block_count += 1;}
 
             let maybe_extrinsic =
                 if let Some(extrinsic) = try_specific_extrinsic(specific_extrinsic, encoded_extrinsic, &assets) {
@@ -242,7 +245,6 @@ fn process_input(
 
     //let mut block: u32 = 8_338_378;
     let mut block: u32 = 0;
-    let mut block_count = 0;
 
     externalities.execute_with(|| {
         block = System::current_block_number() + 1;
@@ -288,7 +290,6 @@ fn process_input(
             // If lapse is positive, then we finalize the block and initialize a new one.
             if lapse > Some(0) {
                 println!("  lapse:       {:?}", lapse);
-                block_count += 1;
 
                 // Finalize current block
                 let prev_header = finalize_block(elapsed);
