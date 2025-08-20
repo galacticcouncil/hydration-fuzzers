@@ -72,14 +72,6 @@ const BLACKLISTED_CALLS: [&str; 8] = [
     "RuntimeCall::Referenda",
 ];
 
-const OMNIPOOL_ASSETS: [u32; 74] = [
-    100, 1000771, 0, 10, 1001, 4, 21, 28, 20, 1000198, 30, 101, 34, 16, 11, 1000085, 1000099,
-    1000766, 14, 1006, 6, 1000796, 19, 1000795, 35, 36, 31, 33, 15, 1000794, 2, 13, 1002, 32,
-    1000745, 27, 1000625, 29, 102, 1000753, 5, 18, 7, 1000624, 26, 3370, 1003, 1000190, 690, 22,
-    1005, 24, 1000626, 8, 1000809, 1000100, 1004, 1000767, 1000765, 1, 252525, 12, 1000081, 3, 17,
-    25, 1000746, 69, 23, 1000851, 9, 1000752, 1000189, 1007,
-];
-
 struct Data<'a> {
     data: &'a [u8],
     pointer: usize,
@@ -155,7 +147,6 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
 }
 
 pub fn main() {
-    let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
     ziggy::fuzz!(|data: &[u8]| {
@@ -177,6 +168,16 @@ fn process_input(
         pointer: 0,
         size: 0,
     };
+
+    // load AssetIds
+    let mut assets: Vec<u32> = Vec::new();
+    externalities.execute_with(|| {
+        // lets assert that the mock is correctly setup, just in case
+        let asset_ids = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
+        for asset_id in asset_ids {
+            assets.push(asset_id);
+        }
+    });
 
     let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
         .filter_map(|data| {
