@@ -72,6 +72,8 @@ const BLACKLISTED_CALLS: [&str; 8] = [
     "RuntimeCall::Referenda",
 ];
 
+const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
+
 struct Data<'a> {
     data: &'a [u8],
     pointer: usize,
@@ -147,6 +149,12 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
 }
 
 pub fn main() {
+    // Create SNAPSHOT from runtime_mock state
+    let mocked_externalities = hydradx_mocked_runtime();
+    let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
+    scraper::save_externalities::<hydradx_runtime::Block>(mocked_externalities, snapshot_path)
+        .unwrap();
+
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
     ziggy::fuzz!(|data: &[u8]| {
@@ -161,7 +169,14 @@ fn process_input(
     data: &[u8],
     accounts: Vec<AccountId>,
 ) {
-    let mut externalities = hydradx_mocked_runtime();
+    // `externalities` represents the state of our mock chain.
+    let snapshot_path = PathBuf::from(SNAPSHOT_PATH);
+    let mut externalities;
+    if let Ok(snapshot) = scraper::load_snapshot::<Block>(snapshot_path) {
+        externalities = snapshot;
+    } else {
+        externalities = hydradx_mocked_runtime();
+    }
 
     // load AssetIds
     let mut assets: Vec<u32> = Vec::new();
