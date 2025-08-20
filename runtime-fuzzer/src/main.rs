@@ -152,7 +152,6 @@ pub fn main() {
     ziggy::fuzz!(|data: &[u8]| {
         process_input(
             data,
-            assets.clone(),
             accounts.clone(),
         );
     });
@@ -160,14 +159,9 @@ pub fn main() {
 
 fn process_input(
     data: &[u8],
-    assets: Vec<u32>,
     accounts: Vec<AccountId>,
 ) {
-    let iteratable = Data {
-        data,
-        pointer: 0,
-        size: 0,
-    };
+    let mut externalities = hydradx_mocked_runtime();
 
     // load AssetIds
     let mut assets: Vec<u32> = Vec::new();
@@ -178,6 +172,12 @@ fn process_input(
             assets.push(asset_id);
         }
     });
+
+    let iteratable = Data {
+        data,
+        pointer: 0,
+        size: 0,
+    };
 
     let extrinsics: Vec<(Option<u32>, usize, RuntimeCall)> = iteratable
         .filter_map(|data| {
@@ -224,8 +224,6 @@ fn process_input(
     if extrinsics.is_empty() {
         return;
     }
-
-    let mut externalities = hydradx_mocked_runtime();
 
     // load AssetIds
     let mut assets: Vec<u32> = Vec::new();
