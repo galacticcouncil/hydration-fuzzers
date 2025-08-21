@@ -70,7 +70,6 @@ const BLACKLISTED_CALLS: [&str; 9] = [
     "RuntimeCall::Timestamp",
     // to prevent false negatives from debug_assert_ne
     "RuntimeCall::XTokens",
-    "RuntimeCall::Council",
     "RuntimeCall::Referenda",
 ];
 
@@ -124,7 +123,6 @@ fn recursively_find_call(call: RuntimeCall, matches_on: fn(RuntimeCall) -> bool)
     } else if let RuntimeCall::Multisig(pallet_multisig::Call::as_multi_threshold_1 { call, .. })
     | RuntimeCall::Utility(pallet_utility::Call::as_derivative { call, .. })
     | RuntimeCall::Proxy(pallet_proxy::Call::proxy { call, .. })
-    | RuntimeCall::Council(pallet_collective::Call::propose { proposal: call, .. }) = call
     {
         return recursively_find_call(*call.clone(), matches_on);
     } else if matches_on(call) {
