@@ -122,7 +122,7 @@ fn recursively_find_call(call: RuntimeCall, matches_on: fn(RuntimeCall) -> bool)
         }
     } else if let RuntimeCall::Multisig(pallet_multisig::Call::as_multi_threshold_1 { call, .. })
     | RuntimeCall::Utility(pallet_utility::Call::as_derivative { call, .. })
-    | RuntimeCall::Proxy(pallet_proxy::Call::proxy { call, .. })
+    | RuntimeCall::Proxy(pallet_proxy::Call::proxy { call, .. }) = call
     {
         return recursively_find_call(*call.clone(), matches_on);
     } else if matches_on(call) {
