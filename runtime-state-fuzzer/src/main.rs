@@ -18,9 +18,6 @@ use sp_runtime::{
     traits::{Dispatchable, Header as _},
     Digest, DigestItem, StateVersion,
 };
-use sp_state_machine::TrieBackendBuilder;
-use sp_io::TestExternalities;
-use sp_state_machine::Backend as _;
 use std::{
     collections::BTreeMap,
     io::Write,
@@ -29,54 +26,39 @@ use std::{
     time::{Duration, Instant},
 };
 
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::process;
-use sp_trie::PrefixedMemoryDB;
-use sp_core::Blake2Hasher;
-
-fn snapshot_path_for_instance() -> String {
-    let id = std::env::var("INSTANCE_ID")
-        .expect("INSTANCE_ID is missing");
-
-    format!("data/instance_snapshots/snapshot-{}.bin", id)
-}
-
-fn get_snapshot() -> scraper::Snapshot<Block> {
-    // Try loading the specific snapshot for the current AFL instance
-    // If missing, load the initial snapshot
-    let snapshot_bytes = std::fs::read(snapshot_path_for_instance())
-        .or_else(|_| std::fs::read(INITIAL_SNAPSHOT_PATH))
-        .expect("Missing snapshot file");
-    let snapshot = scraper::get_snapshot_from_bytes::<Block>(snapshot_bytes)
-        .expect("Failed to create snapshot");
-
-    snapshot
-}
-
-thread_local! {
-    static FUZZING_STATE: RefCell<(sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>, StateVersion, H256)> = {
-        let snapshot = get_snapshot();
-        let (backend, state_version, root) =
-            scraper::construct_backend_from_snapshot::<Block>(snapshot)
-                .expect("Failed to create backend");
-        RefCell::new((backend, state_version, root))
-    };
-}
-
 type FuzzedRuntime = hydradx_runtime::Runtime;
 type Balance = <FuzzedRuntime as pallet_balances::Config>::Balance;
 type RuntimeOrigin = <FuzzedRuntime as frame_system::Config>::RuntimeOrigin;
 type AccountId = <FuzzedRuntime as frame_system::Config>::AccountId;
 
-const MAX_BLOCKS_PER_INPUT: usize = 1000;
+/// The maximum number of blocks per fuzzer input.
+/// If set to 0, then there is no limit at all.
+/// Feel free to set this to a low number (e.g. 4) when you begin your fuzzing campaign and then set
+/// it back to 32 once you have good coverage.
+const MAX_BLOCKS_PER_INPUT: usize = 32;
+
+/// The maximum number of extrinsics per block.
+/// If set to 0, then there is no limit at all.
+/// Feel free to set this to a low number (e.g. 8) when you begin your fuzzing campaign and then set
+/// it back to 0 once you have good coverage.
 const MAX_EXTRINSICS_PER_BLOCK: usize = 0;
+
+/// Max number of seconds a block should run for.
 #[cfg(not(feature = "fuzzing"))]
 const MAX_TIME_FOR_BLOCK: u64 = 6;
-const MAX_BLOCK_LAPSE: u32 = 1000;
-const DELIMITER: [u8; 8] = [42; 8];
-const INITIAL_SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
 
+// We do not skip more than DEFAULT_STORAGE_PERIOD to avoid pallet_transaction_storage from
+// panicking on finalize.
+// Set to number of blocks in two months
+//const MAX_BLOCK_LAPSE: u32 = 864_000;
+const MAX_BLOCK_LAPSE: u32 = 1000;
+
+// Extrinsic delimiter: `********`
+const DELIMITER: [u8; 8] = [42; 8];
+
+const SNAPSHOT_PATH: &str = "data/MOCK_SNAPSHOT";
+
+// We won't analyse those native Substrate pallets
 #[cfg(not(feature = "fuzzing"))]
 const BLACKLISTED_CALLS: [&str; 8] = [
     "RuntimeCall::System",
@@ -85,6 +67,7 @@ const BLACKLISTED_CALLS: [&str; 8] = [
     "RuntimeCall::Uniques",
     "RuntimeCall::Balances",
     "RuntimeCall::Timestamp",
+    // to prevent false negatives from debug_assert_ne
     "RuntimeCall::XTokens",
     "RuntimeCall::Referenda",
 ];
@@ -162,7 +145,6 @@ fn recursively_find_call(call: RuntimeCall, matches_on: fn(RuntimeCall) -> bool)
     }
     false
 }
-
 fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option<RuntimeCall> {
     for handler in extrinsics_handlers() {
         if let Some(call) = handler.try_extrinsic(identifier, data, assets) {
@@ -173,45 +155,36 @@ fn try_specific_extrinsic(identifier: u8, data: &[u8], assets: &[u32]) -> Option
 }
 
 pub fn main() {
-    let state_version = StateVersion::V1;
+    let original_data = std::fs::read(SNAPSHOT_PATH).unwrap();
+    let snapshot = scraper::get_snapshot_from_bytes::<Block>(original_data)
+        .expect("Failed to create snapshot");
+    let (backend, state_version, root) =
+        scraper::construct_backend_from_snapshot::<Block>(snapshot)
+            .expect("Failed to create backend");
+
     let assets: Vec<u32> = OMNIPOOL_ASSETS.to_vec();
     let accounts: Vec<AccountId> = (0..20).map(|i| [i; 32].into()).collect();
 
-    let (mut backend, state_version, mut root) =
-        scraper::construct_backend_from_snapshot::<Block>(get_snapshot())
-            .expect("Failed to create backend");
-
     ziggy::fuzz!(|data: &[u8]| {
-        FUZZING_STATE.with(|state_cell| {
-            let mut state = state_cell.borrow_mut();
-            let (backend, state_version, root) = state.clone();
-
-            if let Some((updated_backend, updated_root)) = process_input(backend, state_version, root, data, assets.clone(), accounts.clone()) {
-                *state = (updated_backend.clone(), state_version, updated_root);
-
-                // Persist updated backend and root to snapshot file after each fuzz run
-                let mut ext = scraper::create_externalities_with_backend::<Block>(
-                    updated_backend,
-                    updated_root,
-                    state_version,
-                );
-                scraper::save_externalities::<Block>(
-                    ext,
-                    snapshot_path_for_instance().into(),
-                ).expect("Failed to persist snapshot");
-            }
-        });
+        process_input(
+            backend.clone(),
+            state_version,
+            root,
+            data,
+            assets.clone(),
+            accounts.clone(),
+        );
     });
 }
 
 fn process_input(
-    mut backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
+    backend: sp_trie::PrefixedMemoryDB<sp_core::Blake2Hasher>,
     state_version: StateVersion,
-    mut root: H256,
+    root: H256,
     data: &[u8],
     assets: Vec<u32>,
     accounts: Vec<AccountId>,
-) -> Option<(PrefixedMemoryDB<Blake2Hasher>, H256)> {
+) {
     // We build the list of extrinsics we will execute
     let mut extrinsic_data = data;
 
@@ -225,7 +198,7 @@ fn process_input(
             .collect();
 
     if extrinsics.is_empty() {
-        return None;
+        return;
     }
 
     //let mut externalities = scraper::create_externalities_from_snapshot::<Block>(&snapshot).expect("Failed to create ext");
@@ -237,7 +210,8 @@ fn process_input(
 
     externalities.execute_with(|| {
         block = System::current_block_number() + 1;
-        println!("blocknr :{:?}", block);
+        #[cfg(not(feature = "fuzzing"))]
+        println!("Starting snapshot block :{:?}", block);
     });
 
     assert_ne!(block, 0, "block number is 0");
@@ -325,10 +299,6 @@ fn process_input(
         // We end the final block
         finalize_block(elapsed)
     });
-
-    let new_root = externalities.execute_with(|| System::finalize().state_root().clone());
-
-    Some((backend, new_root))
 
     // After execution of all blocks.
     // Check that the consumer/provider state is valid.
