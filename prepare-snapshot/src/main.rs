@@ -162,13 +162,12 @@ fn genesis_storage(nonnative_balances : Vec<(AccountId, AssetId, Balance)>, nati
                 parachain_id: PARA_ID.into(),
                 ..Default::default()
             },
+            ismp_parachain: Default::default(),
             aura_ext: Default::default(),
             polkadot_xcm: Default::default(),
             ema_oracle: Default::default(),
             duster: DusterConfig {
-                account_blacklist: vec![],
-                reward_account: Some(get_duster_reward_account()),
-                dust_account: Some(get_duster_dest_account()),
+                account_whitelist: vec![],
             },
             omnipool_warehouse_lm: Default::default(),
             omnipool_liquidity_mining: Default::default(),
@@ -370,11 +369,12 @@ pub fn main() {
     });
     mocked_externalities.commit_all().unwrap();
     mocked_externalities.execute_with(|| {
-        let assets = pallet_omnipool::Assets::<FuzzedRuntime>::iter_keys();
-        for a in assets {
-            let asset = pallet_omnipool::Assets::<FuzzedRuntime>::get(a);
-            println!("{:?}: {:?}", a, asset);
-        }
+        // Note: pallet_omnipool::Assets is now private, commenting out for now
+        // let assets = pallet_omnipool::Assets::<FuzzedRuntime>::iter_keys();
+        // for a in assets {
+        //     let asset = pallet_omnipool::Assets::<FuzzedRuntime>::get(a);
+        //     println!("{:?}: {:?}", a, asset);
+        // }
 
         let registry = pallet_asset_registry::Assets::<FuzzedRuntime>::iter_keys();
         for r in registry {
