@@ -265,7 +265,8 @@ fn process_input(
                 initialize_block(block, Some(&prev_header));
             }
 
-            weight = weight.saturating_add(extrinsic.get_dispatch_info().weight);
+            let dispatch_info = extrinsic.get_dispatch_info();
+            weight = weight.saturating_add(dispatch_info.call_weight.saturating_add(dispatch_info.extension_weight));
             if weight.ref_time() >= 2 * WEIGHT_REF_TIME_PER_SECOND {
                 #[cfg(not(feature = "fuzzing"))]
                 println!("Skipping because of max weight {weight}");
