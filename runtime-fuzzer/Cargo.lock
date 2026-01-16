@@ -8680,7 +8680,7 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af1844ef2428cc3e1cb900be36181049ef3d3193c63e43026cfe202983b27a56"
 dependencies = [
- "proc-macro-crate 1.1.3",
+ "proc-macro-crate 3.2.0",
  "proc-macro2",
  "quote",
  "syn 2.0.98",
@@ -20817,9 +20817,9 @@ dependencies = [
 
 [[package]]
 name = "ziggy"
-version = "1.3.0"
+version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b09881928cb916a855432f0401a8508a6b84e09ef693f023a32d4a9339367fe5"
+checksum = "f8190fe9a65c1313f83938e3949a20ffb2acc2f2995f5e29c55fb919ff6c0262"
 
 [[package]]
 name = "zstd"
