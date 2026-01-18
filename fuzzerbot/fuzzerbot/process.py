@@ -4,7 +4,9 @@ import subprocess
 
 CRASH_RUNNER = 'just crash'
 
-FILTERS = []
+FILTERS = [
+    "polkadot/xcm/src/v5/asset.rs:306:9"
+]
 
 def process_crash_report(filename):
     try:
