@@ -5772,6 +5772,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "home"
+version = "0.5.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3d1354bf6b7235cb4a0576c2619fd4ed18183f689b12b006a0ee7329eeff9a5"
+dependencies = [
+ "windows-sys 0.52.0",
+]
+
+[[package]]
 name = "hostname"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5876,7 +5885,7 @@ dependencies = [
 
 [[package]]
 name = "hydra-dx-math"
-version = "11.1.0"
+version = "12.0.1"
 dependencies = [
  "fixed",
  "num-traits",
@@ -5982,7 +5991,7 @@ dependencies = [
 
 [[package]]
 name = "hydradx-adapters"
-version = "1.10.0"
+version = "1.11.0"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -6036,7 +6045,7 @@ dependencies = [
 
 [[package]]
 name = "hydradx-runtime"
-version = "383.0.0"
+version = "392.0.0"
 dependencies = [
  "alloy-primitives 0.7.7",
  "alloy-sol-types 0.7.7",
@@ -6130,6 +6139,7 @@ dependencies = [
  "pallet-liquidation",
  "pallet-liquidity-mining",
  "pallet-message-queue",
+ "pallet-migrations",
  "pallet-multisig",
  "pallet-omnipool",
  "pallet-omnipool-liquidity-mining",
@@ -6227,6 +6237,7 @@ dependencies = [
  "frame-remote-externalities",
  "frame-support",
  "frame-system",
+ "home",
  "hydradx-runtime",
  "hydradx-traits",
  "orml-tokens",
@@ -9421,7 +9432,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-broadcast"
-version = "1.5.0"
+version = "1.6.0"
 dependencies = [
  "frame-support",
  "frame-support-procedural",
@@ -9477,7 +9488,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-circuit-breaker"
-version = "1.3.0"
+version = "1.4.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -9699,7 +9710,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-currencies"
-version = "3.5.0"
+version = "4.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -9729,7 +9740,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-dca"
-version = "1.12.0"
+version = "1.14.0"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -9822,7 +9833,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-dispatcher"
-version = "1.5.0"
+version = "1.5.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -10770,7 +10781,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-omnipool"
-version = "5.3.0"
+version = "5.4.1"
 dependencies = [
  "bitflags 1.3.2",
  "frame-benchmarking",
@@ -11330,7 +11341,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-stableswap"
-version = "7.2.0"
+version = "7.2.3"
 dependencies = [
  "bitflags 1.3.2",
  "frame-benchmarking",
@@ -16425,7 +16436,7 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "scraper"
-version = "1.4.0"
+version = "1.5.0"
 dependencies = [
  "clap",
  "fp-rpc",
