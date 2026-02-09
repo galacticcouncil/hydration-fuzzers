@@ -51,6 +51,7 @@ pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch
 pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2503-11-patch", default-features = false }
 pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2503-11-patch", default-features = false }
 pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2503-11-patch", default-features = false }
+pallet-migrations = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2503-11-patch", default-features = false }
 
 pallet-evm = { git = "https://github.com/moonbeam-foundation/frontier", branch = "moonbeam-polkadot-stable2503", default-features = false }
 

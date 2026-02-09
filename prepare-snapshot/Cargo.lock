@@ -13777,6 +13777,7 @@ dependencies = [
  "pallet-ema-oracle",
  "pallet-evm",
  "pallet-evm-accounts",
+ "pallet-migrations",
  "pallet-multisig",
  "pallet-omnipool",
  "pallet-proxy",
