@@ -135,6 +135,7 @@ fn genesis_storage(nonnative_balances : Vec<(AccountId, AssetId, Balance)>, nati
             },
             balances: BalancesConfig {
                 balances: native_balances,
+                dev_accounts: None,
             },
             technical_committee: TechnicalCommitteeConfig {
                 members: get_technical_committee(),
@@ -162,7 +163,6 @@ fn genesis_storage(nonnative_balances : Vec<(AccountId, AssetId, Balance)>, nati
                 parachain_id: PARA_ID.into(),
                 ..Default::default()
             },
-            ismp_parachain: Default::default(),
             aura_ext: Default::default(),
             polkadot_xcm: Default::default(),
             ema_oracle: Default::default(),
