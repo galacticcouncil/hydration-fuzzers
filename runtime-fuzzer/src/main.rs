@@ -379,6 +379,8 @@ fn initialize_block(block: u32, prev_header: Option<&Header>) {
             relay_chain_state,
             downward_messages: Vec::default(),
             horizontal_messages: BTreeMap::default(),
+            collator_peer_id: None,
+            relay_parent_descendants: Vec::default(),
         }
     };
     ParachainSystem::set_validation_data(RuntimeOrigin::none(), parachain_validation_data).unwrap();
