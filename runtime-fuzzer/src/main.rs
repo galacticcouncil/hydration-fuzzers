@@ -332,6 +332,10 @@ fn initialize_block(block: u32, prev_header: Option<&Header>) {
     let block_diff = block - last_block;
     let new_timestamp = last_timestamp + u64::from(block_diff) * SLOT_DURATION;
 
+    // Set block number to block - 1 so that Executive::initialize_block
+    // sees current + 1 == block (stable2506 enforces strictly +1)
+    System::set_block_number(block - 1);
+
     let pre_digest = Digest {
         logs: vec![DigestItem::PreRuntime(
             AURA_ENGINE_ID,
