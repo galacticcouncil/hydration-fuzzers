@@ -41,8 +41,8 @@ cumulus-primitives-core = { git = "https://github.com/galacticcouncil/polkadot-s
 cumulus-primitives-parachain-inherent = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch", default-features = false }
 cumulus-test-relay-sproof-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch", default-features = false }
 
-orml-tokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503", default-features = false }
-orml-traits = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503", default-features = false }
+orml-tokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506", default-features = false }
+orml-traits = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506", default-features = false }
 
 pallet-balances = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch", default-features = false }
 pallet-collective = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch", default-features = false }
@@ -53,7 +53,7 @@ pallet-transaction-payment = { git = "https://github.com/galacticcouncil/polkado
 pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch", default-features = false }
 pallet-migrations = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch", default-features = false }
 
-pallet-evm = { git = "https://github.com/moonbeam-foundation/frontier", branch = "moonbeam-polkadot-stable2503", default-features = false }
+pallet-evm = { git = "https://github.com/moonbeam-foundation/frontier", branch = "moonbeam-polkadot-stable2506", default-features = false }
 
 [features]
 default = ["std", "try-runtime"]
@@ -62,15 +62,15 @@ try-runtime = ["hydradx-runtime/try-runtime", "frame-support/try-runtime"]
 
 [patch."https://github.com/moonbeam-foundation/open-runtime-module-library"]
 # ORML dependencies
-orml-benchmarking = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503" }
-orml-tokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503" }
-orml-traits = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503" }
-orml-utilities = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503" }
-orml-vesting = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503" }
-orml-unknown-tokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503" }
-orml-xcm = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503" }
-orml-xcm-support = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503" }
-orml-xtokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503" }
+orml-benchmarking = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+orml-tokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+orml-traits = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+orml-utilities = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+orml-vesting = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+orml-unknown-tokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+orml-xcm = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+orml-xcm-support = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+orml-xtokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
 
 [patch."https://github.com/moonbeam-foundation/polkadot-sdk"]
 frame-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
@@ -541,5 +541,5 @@ cumulus-pallet-parachain-system-proc-macro = { git = "https://github.com/galacti
 cumulus-relay-chain-rpc-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
 
 [patch."https://github.com/bifrost-io/open-runtime-module-library"]
-orml-xcm-support = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503" }
-orml-traits = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2503" }
+orml-xcm-support = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+orml-traits = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }

@@ -3820,24 +3820,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ethereum"
-version = "0.18.2"
-source = "git+https://github.com/rust-ethereum/ethereum?rev=cf3076f07e61102eec686f6816da668f97d94f1f#cf3076f07e61102eec686f6816da668f97d94f1f"
-dependencies = [
- "bytes",
- "ethereum-types",
- "hash-db",
- "hash256-std-hasher",
- "k256",
- "parity-scale-codec",
- "rlp 0.6.1",
- "scale-info",
- "serde",
- "sha3 0.10.8",
- "trie-root",
-]
-
-[[package]]
 name = "ethereum-standards"
 version = "0.1.1"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
@@ -3902,33 +3884,14 @@ dependencies = [
 [[package]]
 name = "evm"
 version = "0.43.4"
-source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503#b3d5b09d5136f76a7e63fae94674f194542e6144"
-dependencies = [
- "auto_impl",
- "ethereum 0.18.2 (git+https://github.com/rust-ethereum/ethereum?rev=cf3076f07e61102eec686f6816da668f97d94f1f)",
- "evm-core 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503)",
- "evm-gasometer 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503)",
- "evm-runtime 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503)",
- "log",
- "parity-scale-codec",
- "primitive-types 0.13.1",
- "rlp 0.6.1",
- "scale-info",
- "serde",
- "sha3 0.10.8",
-]
-
-[[package]]
-name = "evm"
-version = "0.43.4"
 source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506#662508e1a60f9d7aaf300fed832d86c67ef4f1d1"
 dependencies = [
  "auto_impl",
  "environmental",
  "ethereum 0.18.2 (git+https://github.com/moonbeam-foundation/ethereum?branch=moonbeam-polkadot-stable2506)",
- "evm-core 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "evm-gasometer 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "evm-runtime 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
+ "evm-core",
+ "evm-gasometer",
+ "evm-runtime",
  "log",
  "parity-scale-codec",
  "primitive-types 0.13.1",
@@ -3941,17 +3904,6 @@ dependencies = [
 [[package]]
 name = "evm-core"
 version = "0.43.0"
-source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503#b3d5b09d5136f76a7e63fae94674f194542e6144"
-dependencies = [
- "parity-scale-codec",
- "primitive-types 0.13.1",
- "scale-info",
- "serde",
-]
-
-[[package]]
-name = "evm-core"
-version = "0.43.0"
 source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506#662508e1a60f9d7aaf300fed832d86c67ef4f1d1"
 dependencies = [
  "parity-scale-codec",
@@ -3963,33 +3915,12 @@ dependencies = [
 [[package]]
 name = "evm-gasometer"
 version = "0.43.0"
-source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503#b3d5b09d5136f76a7e63fae94674f194542e6144"
-dependencies = [
- "evm-core 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503)",
- "evm-runtime 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503)",
- "primitive-types 0.13.1",
-]
-
-[[package]]
-name = "evm-gasometer"
-version = "0.43.0"
 source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506#662508e1a60f9d7aaf300fed832d86c67ef4f1d1"
 dependencies = [
  "environmental",
- "evm-core 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "evm-runtime 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
+ "evm-core",
+ "evm-runtime",
  "primitive-types 0.13.1",
-]
-
-[[package]]
-name = "evm-runtime"
-version = "0.43.0"
-source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503#b3d5b09d5136f76a7e63fae94674f194542e6144"
-dependencies = [
- "auto_impl",
- "evm-core 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503)",
- "primitive-types 0.13.1",
- "sha3 0.10.8",
 ]
 
 [[package]]
@@ -3999,7 +3930,7 @@ source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkado
 dependencies = [
  "auto_impl",
  "environmental",
- "evm-core 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
+ "evm-core",
  "primitive-types 0.13.1",
  "sha3 0.10.8",
 ]
@@ -4184,12 +4115,12 @@ source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-po
 dependencies = [
  "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethereum-types",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
+ "evm",
  "fc-api",
  "fc-mapping-sync",
  "fc-rpc-core",
  "fc-storage",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "fp-evm",
  "fp-rpc",
  "fp-storage",
  "futures",
@@ -4197,7 +4128,7 @@ dependencies = [
  "jsonrpsee",
  "libsecp256k1",
  "log",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "parity-scale-codec",
  "prometheus",
  "rand 0.9.2",
@@ -4413,23 +4344,6 @@ dependencies = [
 [[package]]
 name = "fp-account"
 version = "1.0.0-dev"
-source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2503#5b38fdfd0362f7f941d14e1ab9dea39ddf9efd65"
-dependencies = [
- "hex",
- "libsecp256k1",
- "log",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-runtime-interface",
- "staging-xcm",
-]
-
-[[package]]
-name = "fp-account"
-version = "1.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
  "hex",
@@ -4463,25 +4377,9 @@ source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-po
 dependencies = [
  "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethereum-types",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "fp-evm",
  "frame-support",
  "parity-scale-codec",
-]
-
-[[package]]
-name = "fp-evm"
-version = "3.0.0-dev"
-source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2503#5b38fdfd0362f7f941d14e1ab9dea39ddf9efd65"
-dependencies = [
- "environmental",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503)",
- "frame-support",
- "num_enum",
- "parity-scale-codec",
- "scale-info",
- "serde",
- "sp-core",
- "sp-runtime",
 ]
 
 [[package]]
@@ -4490,7 +4388,7 @@ version = "3.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
  "environmental",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
+ "evm",
  "frame-support",
  "num_enum",
  "parity-scale-codec",
@@ -4507,7 +4405,7 @@ source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-po
 dependencies = [
  "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethereum-types",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "fp-evm",
  "parity-scale-codec",
  "scale-info",
  "sp-api",
@@ -5695,7 +5593,7 @@ dependencies = [
  "fc-rpc",
  "fc-rpc-core",
  "fp-consensus",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "fp-evm",
  "fp-rpc",
  "fp-self-contained",
  "frame-benchmarking",
@@ -5716,7 +5614,7 @@ dependencies = [
  "pallet-claims",
  "pallet-currencies-rpc-runtime-api",
  "pallet-ethereum",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "pallet-liquidation",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
@@ -5767,7 +5665,7 @@ dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
  "ethabi",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
+ "evm",
  "frame-support",
  "frame-system",
  "hydra-dx-math",
@@ -5775,9 +5673,9 @@ dependencies = [
  "log",
  "module-evm-utility-macro",
  "num_enum",
- "orml-tokens 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
- "orml-utilities 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-tokens",
+ "orml-traits",
+ "orml-utilities",
  "orml-vesting",
  "orml-xcm-support",
  "pallet-asset-registry",
@@ -5832,8 +5730,8 @@ dependencies = [
  "cumulus-primitives-utility",
  "ethabi",
  "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "evm",
+ "fp-evm",
  "fp-rpc",
  "fp-self-contained",
  "frame-executive",
@@ -5851,8 +5749,8 @@ dependencies = [
  "module-evm-utility-macro",
  "num_enum",
  "orml-benchmarking",
- "orml-tokens 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-tokens",
+ "orml-traits",
  "orml-unknown-tokens",
  "orml-vesting",
  "orml-xcm",
@@ -5885,7 +5783,7 @@ dependencies = [
  "pallet-elections-phragmen",
  "pallet-ema-oracle",
  "pallet-ethereum",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "pallet-evm-accounts",
  "pallet-evm-accounts-rpc-runtime-api",
  "pallet-evm-chain-id",
@@ -5984,8 +5882,8 @@ dependencies = [
  "frame-support",
  "frame-system",
  "impl-trait-for-tuples",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "orml-traits",
+ "pallet-evm",
  "parity-scale-codec",
  "primitives",
  "scale-info",
@@ -7482,8 +7380,8 @@ version = "1.2.0"
 dependencies = [
  "ethabi",
  "ethereum-types",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "evm",
+ "fp-evm",
  "frame-support",
  "module-evm-utility-macro",
  "num_enum",
@@ -7896,9 +7794,9 @@ name = "module-evm-utility"
 version = "2.22.0"
 dependencies = [
  "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "evm-gasometer 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "evm-runtime 0.43.0 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
+ "evm",
+ "evm-gasometer",
+ "evm-runtime",
  "sha3 0.10.8",
  "sp-std",
 ]
@@ -8508,28 +8406,12 @@ dependencies = [
 [[package]]
 name = "orml-tokens"
 version = "1.4.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503#ab8a16c034cfba502d4aa32be93436e4908d793c"
-dependencies = [
- "frame-support",
- "frame-system",
- "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503)",
- "parity-scale-codec",
- "scale-info",
- "sp-arithmetic",
- "sp-runtime",
- "sp-std",
-]
-
-[[package]]
-name = "orml-tokens"
-version = "1.4.0"
 source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506#d20eee81b61c385918869e1633b91cfed49ed60b"
 dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "parity-scale-codec",
  "scale-info",
  "serde",
@@ -8541,31 +8423,12 @@ dependencies = [
 [[package]]
 name = "orml-traits"
 version = "1.4.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503#ab8a16c034cfba502d4aa32be93436e4908d793c"
-dependencies = [
- "frame-support",
- "impl-trait-for-tuples",
- "num-traits",
- "orml-utilities 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503)",
- "parity-scale-codec",
- "paste",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
- "staging-xcm",
-]
-
-[[package]]
-name = "orml-traits"
-version = "1.4.0"
 source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506#d20eee81b61c385918869e1633b91cfed49ed60b"
 dependencies = [
  "frame-support",
  "impl-trait-for-tuples",
  "num-traits",
- "orml-utilities 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-utilities",
  "parity-scale-codec",
  "paste",
  "scale-info",
@@ -8590,20 +8453,6 @@ dependencies = [
  "serde",
  "sp-std",
  "staging-xcm",
-]
-
-[[package]]
-name = "orml-utilities"
-version = "1.4.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503#ab8a16c034cfba502d4aa32be93436e4908d793c"
-dependencies = [
- "frame-support",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
@@ -8656,7 +8505,7 @@ version = "1.4.0"
 source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506#d20eee81b61c385918869e1633b91cfed49ed60b"
 dependencies = [
  "frame-support",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "parity-scale-codec",
  "sp-runtime",
  "sp-std",
@@ -8672,7 +8521,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "orml-xcm-support",
  "pallet-xcm",
  "parity-scale-codec",
@@ -8732,7 +8581,7 @@ dependencies = [
  "frame-system",
  "hydradx-traits",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "parity-scale-codec",
  "primitive-types 0.13.1",
  "primitives",
@@ -8890,7 +8739,7 @@ dependencies = [
  "frame-system",
  "hydradx-traits",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "pallet-timestamp",
  "parity-scale-codec",
  "primitive-types 0.13.1",
@@ -8947,7 +8796,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hydradx-traits",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "pallet-timestamp",
  "parity-scale-codec",
  "primitives",
@@ -8986,7 +8835,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "pallet-session",
  "parity-scale-codec",
  "scale-info",
@@ -9069,8 +8918,8 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hydradx-traits",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
- "orml-utilities 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
+ "orml-utilities",
  "parity-scale-codec",
  "primitives",
  "scale-info",
@@ -9104,11 +8953,11 @@ dependencies = [
  "hydradx-adapters",
  "hydradx-traits",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "pallet-broadcast",
  "pallet-dispatcher",
  "pallet-ema-oracle",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "pallet-omnipool",
  "pallet-xyk",
  "parity-scale-codec",
@@ -9147,7 +8996,7 @@ dependencies = [
  "frame-system",
  "hex",
  "hydradx-traits",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "parity-scale-codec",
  "primitives",
  "scale-info",
@@ -9191,7 +9040,7 @@ dependencies = [
  "frame-system",
  "hydradx-traits",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "parity-scale-codec",
  "scale-info",
  "sp-api",
@@ -9218,8 +9067,8 @@ dependencies = [
  "hydra-dx-math",
  "hydradx-traits",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "orml-traits",
+ "pallet-evm",
  "parity-scale-codec",
  "primitives",
  "scale-info",
@@ -9317,15 +9166,15 @@ dependencies = [
  "environmental",
  "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethereum-types",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
+ "evm",
  "fp-consensus",
  "fp-ethereum",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "fp-evm",
  "fp-rpc",
  "fp-storage",
  "frame-support",
  "frame-system",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "parity-scale-codec",
  "scale-info",
  "sp-io",
@@ -9336,37 +9185,14 @@ dependencies = [
 [[package]]
 name = "pallet-evm"
 version = "6.0.0-dev"
-source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2503#5b38fdfd0362f7f941d14e1ab9dea39ddf9efd65"
-dependencies = [
- "cumulus-primitives-storage-weight-reclaim",
- "ethereum 0.18.2 (git+https://github.com/rust-ethereum/ethereum?rev=cf3076f07e61102eec686f6816da668f97d94f1f)",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2503)",
- "fp-account 1.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2503)",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2503)",
- "frame-support",
- "frame-system",
- "hash-db",
- "hex-literal",
- "impl-trait-for-tuples",
- "log",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
-]
-
-[[package]]
-name = "pallet-evm"
-version = "6.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
  "cumulus-primitives-storage-weight-reclaim",
  "environmental",
  "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "fp-account 1.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "evm",
+ "fp-account",
+ "fp-evm",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -9389,7 +9215,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hydradx-traits",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "parity-scale-codec",
  "primitives",
  "scale-info",
@@ -9422,7 +9248,7 @@ name = "pallet-evm-precompile-blake2"
 version = "2.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "fp-evm",
 ]
 
 [[package]]
@@ -9430,7 +9256,7 @@ name = "pallet-evm-precompile-bn128"
 version = "2.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "fp-evm",
  "sp-core",
  "substrate-bn",
 ]
@@ -9439,13 +9265,13 @@ dependencies = [
 name = "pallet-evm-precompile-call-permit"
 version = "0.3.0"
 dependencies = [
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "evm",
+ "fp-evm",
  "frame-support",
  "frame-system",
  "log",
  "num_enum",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "pallet-timestamp",
  "parity-scale-codec",
  "paste",
@@ -9462,9 +9288,9 @@ name = "pallet-evm-precompile-dispatch"
 version = "2.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "fp-evm",
  "frame-support",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "parity-scale-codec",
  "sp-runtime",
 ]
@@ -9474,15 +9300,15 @@ name = "pallet-evm-precompile-flash-loan"
 version = "1.2.0"
 dependencies = [
  "ethabi",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "evm",
+ "fp-evm",
  "frame-support",
  "frame-system",
  "hydradx-traits",
  "log",
  "module-evm-utility-macro",
  "num_enum",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "pallet-hsm",
  "pallet-liquidation",
  "pallet-stableswap",
@@ -9499,12 +9325,12 @@ dependencies = [
 name = "pallet-evm-precompile-lock-manager"
 version = "1.0.0"
 dependencies = [
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "fp-evm",
  "frame-support",
  "frame-system",
  "log",
  "num_enum",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "pallet-gigahdx",
  "parity-scale-codec",
  "precompile-utils",
@@ -9519,7 +9345,7 @@ name = "pallet-evm-precompile-modexp"
 version = "2.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "fp-evm",
  "num",
 ]
 
@@ -9528,7 +9354,7 @@ name = "pallet-evm-precompile-simple"
 version = "2.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "fp-evm",
  "ripemd",
  "sp-io",
 ]
@@ -9629,7 +9455,7 @@ name = "pallet-hsm"
 version = "1.7.0"
 dependencies = [
  "ethabi",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
+ "evm",
  "frame-support",
  "frame-system",
  "hex-literal",
@@ -9640,7 +9466,7 @@ dependencies = [
  "num-traits",
  "num_enum",
  "pallet-broadcast",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "pallet-stableswap",
  "parity-scale-codec",
  "precompile-utils",
@@ -9679,8 +9505,8 @@ dependencies = [
  "frame-system",
  "hydra-dx-math",
  "hydradx-traits",
- "orml-tokens 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-tokens",
+ "orml-traits",
  "pallet-broadcast",
  "parity-scale-codec",
  "primitive-types 0.13.1",
@@ -9698,8 +9524,8 @@ version = "2.5.1"
 dependencies = [
  "ethabi",
  "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "evm",
+ "fp-evm",
  "fp-rpc",
  "fp-self-contained",
  "frame-benchmarking",
@@ -9714,7 +9540,7 @@ dependencies = [
  "pallet-broadcast",
  "pallet-dispatcher",
  "pallet-ethereum",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "pallet-evm-accounts",
  "parity-scale-codec",
  "precompile-utils",
@@ -9738,7 +9564,7 @@ dependencies = [
  "frame-system",
  "hydra-dx-math",
  "hydradx-traits",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "parity-scale-codec",
  "scale-info",
  "sp-arithmetic",
@@ -9819,7 +9645,7 @@ dependencies = [
  "hydradx-traits",
  "impl-trait-for-tuples",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "pallet-balances",
  "pallet-broadcast",
  "parity-scale-codec",
@@ -9840,7 +9666,7 @@ dependencies = [
  "hydra-dx-math",
  "hydradx-traits",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "pallet-balances",
  "pallet-ema-oracle",
  "pallet-liquidity-mining",
@@ -9864,7 +9690,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "hydradx-traits",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "pallet-broadcast",
  "parity-scale-codec",
  "scale-info",
@@ -9958,7 +9784,7 @@ dependencies = [
  "hex-literal",
  "hydra-dx-math",
  "hydradx-traits",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "parity-scale-codec",
  "scale-info",
  "sp-core",
@@ -10071,7 +9897,7 @@ dependencies = [
  "frame-system",
  "hydra-dx-math",
  "hydradx-traits",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "pallet-balances",
  "pallet-broadcast",
  "parity-scale-codec",
@@ -10150,7 +9976,7 @@ dependencies = [
  "hydradx-traits",
  "log",
  "num-traits",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "pallet-broadcast",
  "parity-scale-codec",
  "primitives",
@@ -10171,7 +9997,7 @@ dependencies = [
  "frame-system",
  "hydra-dx-math",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "pallet-conviction-voting",
  "pallet-democracy",
  "pallet-referenda",
@@ -10274,8 +10100,8 @@ dependencies = [
  "frame-system",
  "hydra-dx-math",
  "hydradx-traits",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "orml-traits",
+ "pallet-evm",
  "pallet-transaction-payment",
  "pallet-utility",
  "pallet-xyk",
@@ -10470,8 +10296,8 @@ dependencies = [
  "hydra-dx-math",
  "hydradx-traits",
  "log",
- "orml-tokens 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-tokens",
+ "orml-traits",
  "pallet-broadcast",
  "parity-scale-codec",
  "primitive-types 0.13.1",
@@ -10492,7 +10318,7 @@ dependencies = [
  "hydra-dx-math",
  "hydradx-traits",
  "log",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2506)",
+ "orml-traits",
  "pallet-liquidity-mining",
  "pallet-xyk",
  "parity-scale-codec",
@@ -12151,15 +11977,15 @@ version = "0.3.0"
 dependencies = [
  "affix",
  "environmental",
- "evm 0.43.4 (git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkadot-stable2506)",
- "fp-evm 3.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "evm",
+ "fp-evm",
  "frame-support",
  "frame-system",
  "hex",
  "impl-trait-for-tuples",
  "log",
  "num_enum",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506)",
+ "pallet-evm",
  "parity-scale-codec",
  "paste",
  "precompile-utils-macro",
@@ -12228,14 +12054,14 @@ dependencies = [
  "frame-system",
  "hydradx-runtime",
  "hydradx-traits",
- "orml-tokens 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503)",
- "orml-traits 1.4.0 (git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503)",
+ "orml-tokens",
+ "orml-traits",
  "pallet-asset-registry",
  "pallet-balances",
  "pallet-collective",
  "pallet-dynamic-fees",
  "pallet-ema-oracle",
- "pallet-evm 6.0.0-dev (git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2503)",
+ "pallet-evm",
  "pallet-evm-accounts",
  "pallet-migrations",
  "pallet-multisig",
@@ -19137,36 +18963,6 @@ dependencies = [
 ]
 
 [[patch.unused]]
-name = "orml-benchmarking"
-version = "1.4.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503#ab8a16c034cfba502d4aa32be93436e4908d793c"
-
-[[patch.unused]]
-name = "orml-unknown-tokens"
-version = "1.4.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503#ab8a16c034cfba502d4aa32be93436e4908d793c"
-
-[[patch.unused]]
-name = "orml-vesting"
-version = "1.4.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503#ab8a16c034cfba502d4aa32be93436e4908d793c"
-
-[[patch.unused]]
-name = "orml-xcm"
-version = "1.4.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503#ab8a16c034cfba502d4aa32be93436e4908d793c"
-
-[[patch.unused]]
-name = "orml-xcm-support"
-version = "1.4.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503#ab8a16c034cfba502d4aa32be93436e4908d793c"
-
-[[patch.unused]]
-name = "orml-xtokens"
-version = "1.4.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503#ab8a16c034cfba502d4aa32be93436e4908d793c"
-
-[[patch.unused]]
 name = "pallet-im-online"
 version = "40.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
@@ -19192,16 +18988,6 @@ version = "41.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
 
 [[patch.unused]]
-name = "polkadot-sdk"
-version = "2506.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
-
-[[patch.unused]]
-name = "orml-xcm-support"
-version = "1.4.0"
-source = "git+https://github.com/galacticcouncil/open-runtime-module-library?branch=polkadot-stable2503#ab8a16c034cfba502d4aa32be93436e4908d793c"
-
-[[patch.unused]]
 name = "pallet-im-online"
 version = "40.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
@@ -19209,4 +18995,9 @@ source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-st
 [[patch.unused]]
 name = "pallet-sudo"
 version = "41.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
+
+[[patch.unused]]
+name = "polkadot-sdk"
+version = "2506.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
