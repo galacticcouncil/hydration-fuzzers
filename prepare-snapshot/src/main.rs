@@ -170,6 +170,7 @@ fn genesis_storage(nonnative_balances : Vec<(AccountId, AssetId, Balance)>, nati
             duster: DusterConfig {
                 account_whitelist: vec![],
             },
+            parameters: Default::default(),
             omnipool_warehouse_lm: Default::default(),
             omnipool_liquidity_mining: Default::default(),
             evm_chain_id: hydradx_runtime::EVMChainIdConfig {
