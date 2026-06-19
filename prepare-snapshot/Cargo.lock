@@ -3785,25 +3785,6 @@ dependencies = [
 [[package]]
 name = "ethereum"
 version = "0.18.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ee371ebb7479ed3258617557ab0b3247e741075cb6b02b820d188f68da44441"
-dependencies = [
- "bytes",
- "ethereum-types",
- "hash-db",
- "hash256-std-hasher",
- "k256",
- "parity-scale-codec",
- "rlp 0.6.1",
- "scale-info",
- "serde",
- "sha3 0.10.8",
- "trie-root",
-]
-
-[[package]]
-name = "ethereum"
-version = "0.18.2"
 source = "git+https://github.com/moonbeam-foundation/ethereum?branch=moonbeam-polkadot-stable2506#301236b0cbbbd38dda2fadd68658e9a26e5c7e7a"
 dependencies = [
  "bytes",
@@ -3888,7 +3869,7 @@ source = "git+https://github.com/moonbeam-foundation/evm?branch=moonbeam-polkado
 dependencies = [
  "auto_impl",
  "environmental",
- "ethereum 0.18.2 (git+https://github.com/moonbeam-foundation/ethereum?branch=moonbeam-polkadot-stable2506)",
+ "ethereum",
  "evm-core",
  "evm-gasometer",
  "evm-runtime",
@@ -4113,7 +4094,7 @@ name = "fc-rpc"
 version = "2.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "ethereum-types",
  "evm",
  "fc-api",
@@ -4163,7 +4144,7 @@ name = "fc-rpc-core"
 version = "1.1.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "ethereum-types",
  "jsonrpsee",
  "rlp 0.6.1",
@@ -4179,7 +4160,7 @@ name = "fc-storage"
 version = "1.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "ethereum-types",
  "fp-rpc",
  "fp-storage",
@@ -4364,7 +4345,7 @@ name = "fp-consensus"
 version = "2.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "parity-scale-codec",
  "sp-core",
  "sp-runtime",
@@ -4375,7 +4356,7 @@ name = "fp-ethereum"
 version = "1.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "ethereum-types",
  "fp-evm",
  "frame-support",
@@ -4403,7 +4384,7 @@ name = "fp-rpc"
 version = "3.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "ethereum-types",
  "fp-evm",
  "parity-scale-codec",
@@ -5586,7 +5567,7 @@ dependencies = [
  "cumulus-relay-chain-interface",
  "cumulus-test-relay-sproof-builder",
  "ethabi",
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "fc-consensus",
  "fc-db",
  "fc-mapping-sync",
@@ -5729,7 +5710,7 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "ethabi",
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "evm",
  "fp-evm",
  "fp-rpc",
@@ -7793,7 +7774,7 @@ dependencies = [
 name = "module-evm-utility"
 version = "2.22.0"
 dependencies = [
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "evm",
  "evm-gasometer",
  "evm-runtime",
@@ -9164,7 +9145,7 @@ version = "4.0.0-dev"
 source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-polkadot-stable2506#20dd566596c47aac28107beed433ca47e5a6b184"
 dependencies = [
  "environmental",
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "ethereum-types",
  "evm",
  "fp-consensus",
@@ -9189,7 +9170,7 @@ source = "git+https://github.com/moonbeam-foundation/frontier?branch=moonbeam-po
 dependencies = [
  "cumulus-primitives-storage-weight-reclaim",
  "environmental",
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "evm",
  "fp-account",
  "fp-evm",
@@ -9523,7 +9504,7 @@ name = "pallet-liquidation"
 version = "2.5.1"
 dependencies = [
  "ethabi",
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "evm",
  "fp-evm",
  "fp-rpc",
@@ -9951,7 +9932,7 @@ dependencies = [
 name = "pallet-signet"
 version = "1.3.0"
 dependencies = [
- "ethereum 0.18.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethereum",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -18988,6 +18969,11 @@ version = "41.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
 
 [[patch.unused]]
+name = "polkadot-sdk"
+version = "2506.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
+
+[[patch.unused]]
 name = "pallet-im-online"
 version = "40.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
@@ -18995,9 +18981,4 @@ source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-st
 [[patch.unused]]
 name = "pallet-sudo"
 version = "41.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
-
-[[patch.unused]]
-name = "polkadot-sdk"
-version = "2506.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"

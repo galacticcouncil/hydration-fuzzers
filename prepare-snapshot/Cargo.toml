@@ -384,6 +384,8 @@ cumulus-pallet-parachain-system-proc-macro = { git = "https://github.com/galacti
 cumulus-relay-chain-rpc-interface = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
 
 [patch.crates-io]
+ethereum = { git = "https://github.com/moonbeam-foundation/ethereum", branch = "moonbeam-polkadot-stable2506" }
+evm = { git = "https://github.com/moonbeam-foundation/evm", branch = "moonbeam-polkadot-stable2506" }
 polkadot-sdk = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
 sc-consensus-epochs = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
 frame-benchmarking = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
