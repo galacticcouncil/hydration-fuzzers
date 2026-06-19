@@ -170,7 +170,10 @@ fn genesis_storage(nonnative_balances : Vec<(AccountId, AssetId, Balance)>, nati
             duster: DusterConfig {
                 account_whitelist: vec![],
             },
-            parameters: Default::default(),
+            parameters: ParametersConfig {
+                relay_parent_offset_override: true,
+                ..Default::default()
+            },
             omnipool_warehouse_lm: Default::default(),
             omnipool_liquidity_mining: Default::default(),
             evm_chain_id: hydradx_runtime::EVMChainIdConfig {
@@ -360,6 +363,7 @@ pub fn main() {
         for (key, value) in storage_pairs {
             sp_io::storage::set(&key, &value);
         }
+        Parameters::set_relay_parent_offset_override(true);
     });
     mocked_externalities.execute_with(|| {
         for (acc, amount) in native_balances {

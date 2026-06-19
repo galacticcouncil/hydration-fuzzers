@@ -209,6 +209,7 @@ fn process_input(
     let mut block: u32 = 0;
 
     externalities.execute_with(|| {
+        Parameters::set_relay_parent_offset_override(true);
         block = System::current_block_number() + 1;
         #[cfg(not(feature = "fuzzing"))]
         println!("Starting snapshot block :{:?}", block);
