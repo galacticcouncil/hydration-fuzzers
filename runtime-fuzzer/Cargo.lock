@@ -5520,7 +5520,7 @@ dependencies = [
 
 [[package]]
 name = "hydradx"
-version = "15.0.2"
+version = "15.1.6"
 dependencies = [
  "async-trait",
  "clap",
@@ -5550,6 +5550,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "futures",
+ "futures-timer",
  "hex-literal",
  "hydra-dx-build-script-utils",
  "hydradx-runtime",
@@ -5559,6 +5560,7 @@ dependencies = [
  "kvdb-rocksdb",
  "liquidation-worker-support",
  "log",
+ "lru 0.12.5",
  "num_cpus",
  "pallet-claims",
  "pallet-currencies-rpc-runtime-api",
@@ -5571,6 +5573,7 @@ dependencies = [
  "polkadot-primitives",
  "polkadot-service",
  "primitives",
+ "rlp 0.6.1",
  "sc-basic-authorship",
  "sc-chain-spec",
  "sc-cli",
@@ -5598,6 +5601,7 @@ dependencies = [
  "sp-offchain",
  "sp-runtime",
  "sp-std",
+ "sp-storage",
  "sp-timestamp",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
@@ -5664,8 +5668,10 @@ dependencies = [
 
 [[package]]
 name = "hydradx-runtime"
-version = "426.0.0"
+version = "433.0.0"
 dependencies = [
+ "alloy-primitives 0.7.7",
+ "alloy-sol-types 0.7.7",
  "cumulus-pallet-aura-ext",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-weight-reclaim",
@@ -5679,6 +5685,7 @@ dependencies = [
  "cumulus-primitives-utility",
  "ethabi",
  "ethereum",
+ "ethereum-types",
  "evm",
  "fp-evm",
  "fp-rpc",
@@ -5826,7 +5833,7 @@ dependencies = [
 
 [[package]]
 name = "hydradx-traits"
-version = "4.10.0"
+version = "4.11.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -9200,7 +9207,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-evm-accounts"
-version = "1.6.1"
+version = "1.7.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -9370,7 +9377,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-fee-processor"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -9405,7 +9412,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-gigahdx"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -9511,7 +9518,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-liquidation"
-version = "2.5.1"
+version = "2.6.0"
 dependencies = [
  "ethabi",
  "ethereum",
@@ -9675,7 +9682,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-otc"
-version = "2.4.0"
+version = "2.5.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -9692,7 +9699,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-otc-settlements"
-version = "1.4.1"
+version = "1.4.2"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -9767,7 +9774,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-referrals"
-version = "1.6.0"
+version = "1.6.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -9957,7 +9964,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-stableswap"
-version = "7.4.1"
+version = "7.5.0"
 dependencies = [
  "bitflags 1.3.2",
  "frame-benchmarking",
@@ -10085,7 +10092,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-transaction-multi-payment"
-version = "10.6.0"
+version = "10.6.1"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -18978,11 +18985,6 @@ version = "41.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
 
 [[patch.unused]]
-name = "polkadot-sdk"
-version = "2506.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
-
-[[patch.unused]]
 name = "pallet-im-online"
 version = "40.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
@@ -18990,6 +18992,11 @@ source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-st
 [[patch.unused]]
 name = "pallet-sudo"
 version = "41.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
+
+[[patch.unused]]
+name = "polkadot-sdk"
+version = "2506.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#e8f4375d646cf2066f8c76e338398841709a0934"
 
 [[patch.unused]]
