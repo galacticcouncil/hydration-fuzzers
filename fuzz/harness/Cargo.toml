@@ -1,0 +1,65 @@
+[package]
+name = "hydration-fuzz-harness"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+arbitrary = { version = "1", features = ["derive"] }
+codec = { package = "parity-scale-codec", version = "3.7", features = ["derive"] }
+hex-literal = "0.4"
+
+hydradx-runtime = { path = "../../../hydration-node/runtime/hydradx", features = ["std", "try-runtime"] }
+hydradx-traits = { path = "../../../hydration-node/traits" }
+primitives = { path = "../../../hydration-node/primitives" }
+pallet-omnipool = { path = "../../../hydration-node/pallets/omnipool" }
+pallet-stableswap = { path = "../../../hydration-node/pallets/stableswap" }
+pallet-xyk = { path = "../../../hydration-node/pallets/xyk" }
+pallet-route-executor = { path = "../../../hydration-node/pallets/route-executor" }
+pallet-hsm = { path = "../../../hydration-node/pallets/hsm" }
+pallet-liquidation = { path = "../../../hydration-node/pallets/liquidation" }
+pallet-intent = { path = "../../../hydration-node/pallets/intent" }
+pallet-ice = { path = "../../../hydration-node/pallets/ice" }
+pallet-dispatcher = { path = "../../../hydration-node/pallets/dispatcher" }
+pallet-broadcast = { path = "../../../hydration-node/pallets/broadcast" }
+pallet-evm-accounts = { path = "../../../hydration-node/pallets/evm-accounts" }
+pallet-parameters = { path = "../../../hydration-node/pallets/parameters" }
+pallet-circuit-breaker = { path = "../../../hydration-node/pallets/circuit-breaker" }
+pallet-asset-registry = { path = "../../../hydration-node/pallets/asset-registry" }
+pallet-ema-oracle = { path = "../../../hydration-node/pallets/ema-oracle" }
+pallet-otc = { path = "../../../hydration-node/pallets/otc" }
+pallet-dca = { path = "../../../hydration-node/pallets/dca" }
+pallet-gigahdx = { path = "../../../hydration-node/pallets/gigahdx" }
+amm-simulator = { path = "../../../hydration-node/pallets/ice/amm-simulator" }
+ice-solver = { path = "../../../hydration-node/ice/ice-solver" }
+ice-support = { path = "../../../hydration-node/pallets/ice/support" }
+
+frame-support = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch", features = ["try-runtime"] }
+frame-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+sp-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+sp-io = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+sp-runtime = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+sp-state-machine = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+sp-trie = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+sp-consensus-aura = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+pallet-balances = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+pallet-timestamp = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+pallet-utility = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+pallet-proxy = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+pallet-multisig = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+pallet-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+staging-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+polkadot-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+cumulus-primitives-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+cumulus-primitives-parachain-inherent = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+cumulus-test-relay-sproof-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+orml-tokens = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+orml-traits = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+pallet-evm = { git = "https://github.com/moonbeam-foundation/frontier", branch = "moonbeam-polkadot-stable2506" }
+fp-evm = { git = "https://github.com/moonbeam-foundation/frontier", branch = "moonbeam-polkadot-stable2506" }
+# `tracing` feeds EVM (contract, pc) coverage to AFL. Enabled here so feature unification reaches pallet-evm.
+evm = { git = "https://github.com/moonbeam-foundation/evm", branch = "moonbeam-polkadot-stable2506", features = ["tracing"] }
+evm-runtime = { git = "https://github.com/moonbeam-foundation/evm", branch = "moonbeam-polkadot-stable2506", features = ["tracing"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(fuzzing)"] }

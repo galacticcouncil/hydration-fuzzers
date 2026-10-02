@@ -1,0 +1,8 @@
+[package]
+name = "hydration-fuzz-snapshot"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+harness = { package = "hydration-fuzz-harness", path = "../harness" }

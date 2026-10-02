@@ -14,3 +14,8 @@ memory_map.output
 .idea/
 .DS_Store
 .env
+
+fuzz/data/SNAPSHOT
+fuzz/findings/*.bin
+fuzz/targets/*/output/
+fuzz/targets/*/seeds/
