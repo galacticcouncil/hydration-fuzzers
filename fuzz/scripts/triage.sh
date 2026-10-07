@@ -2,9 +2,11 @@
 # Replay every crash file in DIR (or the newest AFL crash dir) and print one line per file:
 #   <file> :: <first VIOLATION / panic line, or REPLAYS CLEAN>
 # then a histogram by violation kind. Pass the same FUZZ_* env as the fuzz run to see what AFL saw.
-#   ./triage.sh [DIR] [-a]      -a: include files already listed in triage.log (default: only new ones)
+#   scripts/triage.sh [DIR] [-a]      -a: include files already listed in triage.log (default: only new ones)
+#   REPLAY_TIMEOUT=60 (seconds per input, default 300); TRIAGE_LOG=<path> (default targets/runtime/output/triage.log)
 set -euo pipefail
-cd "$(dirname "$0")"
+export LLVM_PROFILE_FILE=/dev/null   # the soak binary must not drop coverage profiles
+cd "$(dirname "$0")/.."
 DIR=${1:-$(ls -td targets/runtime/output/hydration-fuzz-runtime/crashes/*/ | head -1)}
 ALL=${2:-}
 LOG=${TRIAGE_LOG:-targets/runtime/output/triage.log}
@@ -14,7 +16,7 @@ for f in "$DIR"/*; do
 	[ -f "$f" ] || continue
 	key="$DIR/$(basename "$f")"
 	[ -z "$ALL" ] && grep -qF "$key ::" "$LOG" && continue
-	v=$(timeout 300 ./target/release/hydration-fuzz-soak replay "$f" 2>&1 \
+	v=$(timeout "${REPLAY_TIMEOUT:-300}" ./target/release/hydration-fuzz-soak replay "$f" 2>&1 \
 		| grep -E 'VIOLATION|panicked at|: ok$' | grep -v 'action.rs:2' | head -1 \
 		| sed -E 's/^.*: ok$/REPLAYS CLEAN/; s/.*known issue, action rolled back: /KNOWN /' | cut -c1-220 || true)
 	echo "$key :: ${v:-NO OUTPUT}" | tee -a "$LOG"

@@ -33,12 +33,22 @@ pub const AAVE_MANAGER_ACTOR: u8 = 19;
 /// Upper bound on actions per scenario; keeps a single input's runtime bounded.
 pub const MAX_ACTIONS: usize = 48;
 
+thread_local! {
+	/// Single-actor mode (`Flags::actor`): every acting account resolves to this actor. Victims and
+	/// impersonation sources don't go through `actor()` and are unaffected.
+	static ACTOR_OVERRIDE: std::cell::Cell<Option<u8>> = const { std::cell::Cell::new(None) };
+}
+
+pub fn set_actor_override(a: Option<u8>) {
+	ACTOR_OVERRIDE.with(|c| c.set(a));
+}
+
 pub fn actor(i: u8) -> AccountId {
-	[i % ACTORS; 32].into()
+	[ACTOR_OVERRIDE.with(|c| c.get()).unwrap_or(i) % ACTORS; 32].into()
 }
 
 pub fn actor_evm(i: u8) -> H160 {
-	H160([i % ACTORS; 20])
+	H160([ACTOR_OVERRIDE.with(|c| c.get()).unwrap_or(i) % ACTORS; 20])
 }
 
 static VERBOSE: AtomicBool = AtomicBool::new(false);
@@ -153,7 +163,7 @@ mod tests {
 		assert!(!engine.tables.omnipool.is_empty());
 		let amount = Amount::Frac(3);
 		let s = Scenario {
-			flags: Flags { circuit_breaker_off: true, solve_each_block: true },
+			flags: Flags { circuit_breaker_off: true, solve_each_block: true, actor: None },
 			actions: vec![
 				Action::OmnipoolSell { who: 1, asset_in: 0, asset_out: 1, amount },
 				Action::StableSell { who: 2, pool: 0, i_in: 0, i_out: 1, amount },
@@ -178,6 +188,56 @@ mod tests {
 		let mut engine = super::Engine::new(&path);
 		let cfg = engine.ext.execute_with(pallet_omnipool::pallet::SlipFee::<hydradx_runtime::Runtime>::get);
 		eprintln!("Omnipool::SlipFee = {cfg:?}");
+	}
+
+	/// Single-actor mode redirects every acting account; the Aave lifecycle supplies, lapses and
+	/// withdraws from the live aToken balance on the same actor/reserve.
+	#[test]
+	fn single_actor_aave_lifecycle() {
+		let path = super::default_snapshot_path();
+		if !std::path::Path::new(&path).exists() {
+			eprintln!("no snapshot at {path}; run the snapshot bin first");
+			return;
+		}
+		let mut engine = super::Engine::new(&path);
+		let Some(r) = engine.tables.reserves.iter().find(|r| r.asset.is_some() && r.atoken_asset.is_some()).cloned() else {
+			eprintln!("snapshot has no Aave reserve with a registered aToken");
+			return;
+		};
+		let (u_asset, a_asset) = (r.asset.unwrap(), r.atoken_asset.unwrap());
+		let reserve_idx = engine.tables.reserves.iter().position(|x| x.atoken == r.atoken).unwrap() as u8;
+		let bal = |e: &mut super::Engine, who: u8, asset| e.ext.execute_with(|| super::action::bal(asset, &super::actor(who)));
+		let (u3, a3, u9, a9) = (bal(&mut engine, 3, u_asset), bal(&mut engine, 3, a_asset), bal(&mut engine, 9, u_asset), bal(&mut engine, 9, a_asset));
+		assert!(u3 > 0, "actor 3 must hold the underlying to supply");
+		let s = Scenario {
+			flags: Flags { circuit_breaker_off: true, solve_each_block: false, actor: Some(3) },
+			// `who: 9` everywhere: single-actor mode must redirect it to actor 3.
+			actions: vec![Action::AaveLifecycle { who: 9, reserve: reserve_idx, amount: Amount::Frac(64), lapse: 2 }],
+		};
+		engine.run_scenario(&s);
+		let (u3b, a3b, u9b, a9b) = (bal(&mut engine, 3, u_asset), bal(&mut engine, 3, a_asset), bal(&mut engine, 9, u_asset), bal(&mut engine, 9, a_asset));
+		assert_eq!((u9, a9), (u9b, a9b), "actor 9 must be untouched in single-actor mode");
+		// Supplied a quarter, withdrew a quarter of the resulting aTokens: net aTokens up, underlying down.
+		assert!(a3b > a3 && u3b < u3, "lifecycle did not run on actor 3: aToken {a3}->{a3b}, underlying {u3}->{u3b}");
+	}
+
+	/// An ICE round submits its own intents, solves and settles them; the mutated copy must be rejected
+	/// or pass the validator oracle.
+	#[test]
+	fn ice_round_settles() {
+		let path = super::default_snapshot_path();
+		if !std::path::Path::new(&path).exists() {
+			return;
+		}
+		let mut engine = super::Engine::new(&path);
+		let spec = |who, a, b| super::action::IntentSpec { who, asset_in: a, asset_out: b, amount_in: Amount::Frac(2), limit: 0, partial: false };
+		let s = Scenario {
+			flags: Flags { circuit_breaker_off: true, solve_each_block: false, actor: None },
+			actions: vec![Action::IceRound { intents: vec![spec(1, 0, 1), spec(2, 1, 0), spec(3, 0, 2)], lapse: 1, mutate: Some(9) }],
+		};
+		engine.run_scenario(&s);
+		let left = engine.ext.execute_with(|| pallet_intent::Intents::<hydradx_runtime::Runtime>::iter_keys().count());
+		assert!(left < 3, "no intent was settled: {left} of 3 still stored");
 	}
 
 	#[test]

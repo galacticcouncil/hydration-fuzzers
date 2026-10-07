@@ -6,6 +6,9 @@ Everything below is run from this directory (`hydration-fuzzers/fuzz`) unless st
 `hydration-node` must be checked out next to `hydration-fuzzers` (`../../hydration-node`); the fuzzer compiles
 whatever runtime is checked out there.
 
+`just --list` shows one target per step below (`just setup`, `build`, `build-afl`, `snapshot`, `test`, `soak`, `fuzz`,
+`restart`, `stats`, `triage`, `replay`, `cover`); the sections keep the raw commands so you can see what each does.
+
 ## 0. Prerequisites
 
 ```bash
@@ -114,15 +117,20 @@ Seeded random scenarios through the same harness and oracles as the AFL target; 
 
 ```bash
 cd targets/runtime
-$E cargo ziggy build --no-honggfuzz --release           # instrumented target: ~1.5 h cold, minutes incremental
+RUSTFLAGS=-Cinstrument-coverage $E cargo ziggy build --no-honggfuzz --release   # AFL + coverage instrumented, ~2 h cold
 ../../target/release/hydration-fuzz-soak seeds seeds 64  # 64 valid seed inputs for the corpus
 
 FUZZ_KNOWN_PANICS='Transfer - source sent incorrect amount|Transfer - dest received incorrect amount' \
 FUZZ_MAX_BLOCK_MS=20000 \
+RUSTFLAGS=-Cinstrument-coverage LLVM_PROFILE_FILE=/dev/null \
 $E AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 AFL_SKIP_CPUFREQ=1 \
-  cargo ziggy fuzz --no-honggfuzz --release -j 4 -t 22 -G 4096 -i seeds
+  cargo ziggy fuzz --no-honggfuzz --release -j 4 -t 22 -g 768 -G 4096 -i seeds
 ```
 
+- `RUSTFLAGS=-Cinstrument-coverage` on every build *and* fuzz command (fuzz rebuilds first): the one AFL binary also
+  carries LLVM coverage counters, so `scripts/coverage.sh` needs no extra build. Changing `RUSTFLAGS` triggers a full rebuild.
+  `LLVM_PROFILE_FILE=/dev/null` stops the fuzzing children from writing profiles.
+- `-g 768` keeps inputs long enough for ~12+ actions per scenario (AFL otherwise drifts to 3–4); `-G 4096` caps at the 48-action bound.
 - `-j` = parallel instances (each is its own process with its own copy of the state; ~0.5 GB each).
 - `--no-honggfuzz` always: honggfuzz is not supported for this target.
 - `FUZZ_MAX_BLOCK_MS=20000`: the instrumented binary is 2–3× slower than the soak binary, so the default 2 s
@@ -157,7 +165,7 @@ To triage a whole directory in one go (newest dir by default; appends to `target
 and skips files already triaged; prints a histogram by violation kind):
 
 ```bash
-FUZZ_KNOWN_PANICS='…same as the run…' FUZZ_MAX_BLOCK_MS=20000 ./triage.sh [DIR]
+FUZZ_KNOWN_PANICS='…same as the run…' FUZZ_MAX_BLOCK_MS=20000 scripts/triage.sh [DIR]
 ```
 
 The classification rules (known / noise / new) and the root-cause procedure are in AGENTS.md, "Triaging crashes".
@@ -180,25 +188,36 @@ To keep an old queue instead, minimise it once and feed it back with `-i`:
 `$E cargo ziggy minimize --release -e afl-plus-plus -i output/hydration-fuzz-runtime/corpus.old -o seeds_min` and then `-i seeds_min`.
 
 After changing harness code, rebuild both binaries (`$E cargo build --release` and
-`$E cargo ziggy build --no-honggfuzz --release` in `targets/runtime`); a running AFL keeps using the old target
+`RUSTFLAGS=-Cinstrument-coverage $E cargo ziggy build --no-honggfuzz --release` in `targets/runtime`); a running AFL keeps using the old target
 until restarted.
 
 ## 7. Coverage report
 
 ```bash
-cd targets/runtime
-$E cargo ziggy cover --no-honggfuzz --release -s ../../../../hydration-node -t html,lcov
-# -> output/hydration-fuzz-runtime/coverage/index.html
+scripts/coverage.sh [CORPUS_DIR]  # default: targets/runtime/output/hydration-fuzz-runtime/corpus
+# -> targets/runtime/output/coverage/{report.txt,by_component.txt,html/index.html,lcov}
 ```
 
-First run builds a coverage-instrumented copy of the runtime (another long build); after that it only replays the
-corpus. Rust code only; EVM bytecode coverage feeds AFL's guidance but is not in this report.
+Needs `rustup component add llvm-tools-preview` once. No extra build: it replays the corpus through the AFL binary
+from step 4 (`FUZZ_REPLAY_ARGS=1`, `JOBS=4` parallel, all oracles muted so every input contributes) and reports with
+`llvm-profdata`/`llvm-cov`. Do not use `cargo ziggy cover` (relies on `-Zprofile`, gone from rustc). The report
+covers Rust (node pallets, runtime, harness); EVM bytecode coverage feeds AFL's guidance but is not in it.
+
+To cover everything the fuzzer ever found rather than the current shared corpus, point it at a merged directory of
+all instances' queues (`output/hydration-fuzz-runtime/afl/*/queue/`, deduplicated by content).
 
 ## 8. ICE solver target
 
 Same workflow from `targets/ice-solver` (its `target/` is a symlink to the runtime target's, so only the small binary
 is rebuilt). No chain execution: inputs become intents solved against simulator state captured once, checked by the
 ICE oracle. Tens of execs/s.
+
+## 9. Unattended monitoring
+
+`MONITOR.md` is the instruction file for the monitor job: `pi --print @fuzz/MONITOR.md "…"` from the repo root,
+by hand or on any schedule, inspects the running fuzzer, triages new crashes and sends one Discord message; the scripts it uses live in `scripts/`: `monitor-gate.sh`, `monitor-status.sh`,
+`notify-discord.sh` and `triage.sh` (`just gate|status|notify-status|triage`).
+
 
 ## Known findings baked into the default known-panics list
 

@@ -65,7 +65,7 @@ Don't run the AFL binary directly (persistent mode SIGSTOPs itself); replay cras
 
 ## Scenario model (`harness/src/action.rs`)
 
-Input bytes → `Scenario { flags, actions }` via `arbitrary` (≤ 48 actions). `flags.solve_each_block` settles intents at every block end; `flags.circuit_breaker_off` lifts
+Input bytes → `Scenario { flags, actions }` via `arbitrary` (≤ 48 actions; byte-carrying fields such as raw calls, calldata and raw solutions are capped at 256 bytes so one action cannot swallow the input). AFL drifts toward short inputs (3–4 actions). Long scenarios come from long seeds (`just seeds`: up to 1536 bytes, ≈25 actions) and from AFL mutating them; `-g 768` in `just fuzz` only stops AFL from shrinking below ~768 bytes, and AFL meets it by zero-padding short inputs. Zero bytes decode to an empty `Raw`, which the decoder treats as end of input (otherwise padding showed up as dozens of `Raw` no-ops per input, 35 % of all actions in one run). `flags.solve_each_block` settles intents at every block end; `flags.circuit_breaker_off` lifts
 trade/liquidity limits for every asset. Actors are `[i;32]`, i < 20, EVM identity `H160([i;20])` (bound in the
 snapshot). Amounts: `Frac(f)` = f/255 of the actor's balance, `Units{m,e}` = human-scale, `Raw(u128)`.
 All asset/pool/contract choices index tables read from the snapshot at startup (`tables.rs`).
@@ -85,6 +85,8 @@ All asset/pool/contract choices index tables read from the snapshot at startup (
 | `Impersonate` | `Executor::call` as any address from the users table (no signature) |
 | `DispatchEvm` | `Dispatcher::dispatch_evm_call(EVM::call)` |
 | `SubmitIntent`, `RemoveIntent`, `SolveAndSubmit`, `SubmitSolution(raw)` | pallet-intent; production solver via `pallet_ice::Pallet::run` + `submit_solution(none)`; SCALE-fuzzed `Solution` |
+| `AaveLifecycle { who, reserve, amount, lapse }` | related ops on one actor/reserve: supply `amount` of the underlying → advance `lapse` blocks → withdraw `amount` of the *live* aToken balance (router Aave path both ways). A failed supply isn't fatal. |
+| `IceRound { intents: Vec<IntentSpec>, lapse, mutate }` | self-contained ICE round: up to 6 `SubmitIntent`s → advance `lapse` blocks → solver + settlement (`ice_settlement` oracle). With `mutate`, a nudged copy of the solver's solution (one amount ±1/×2 or score+1) is submitted first: the pallet must reject it, or the accepted solution must pass the independent oracle (`ice_validator`). Raised settlement frequency ~10× (51 settlements / 3-min soak vs 4). |
 
 No action ever deploys or modifies a contract.
 
@@ -153,8 +155,26 @@ accounts with Aave collateral).
   AFL exploring every Aave path.
 - The Uniswap and XYK differential checks are inert on this snapshot: their simulators only read pools registered in
   `ICE.SolverRouting`, and none are. Omnipool, Stableswap and Aave differentials are live.
-- Scenario flags: `circuit_breaker_off`, `solve_each_block` (solver + settlement at every block end that has valid intents); transaction-pause is reachable only via `Raw`.
+- Scenario flags: `circuit_breaker_off`, `solve_each_block` (solver + settlement at every block end that has valid intents), `actor: Option<u8>` (single-actor mode: every acting account is this actor; victims/impersonated senders stay fuzzed); transaction-pause is reachable only via `Raw`.
 - The ice-solver target doesn't mutate simulator state yet (only intents).
+
+## Monitoring (unattended runs)
+
+[MONITOR.md](MONITOR.md) is the instruction file for the monitor job: one agent run (`pi --print @fuzz/MONITOR.md …`
+from the repository root, fired by hand or on a schedule) that inspects the running fuzzer, triages new crashes
+and sends one Discord message. The scripts it calls live in `scripts/`:
+
+| Piece | Role |
+|---|---|
+| `scripts/monitor-gate.sh` (`just gate`) | the agent's first step: exit 0 only if there are crash files not in the state (by sha1/path) or the fuzzer looks dead/stalled; otherwise the run is just "send status, done" |
+| `scripts/monitor-status.sh` (`just status`) | the Discord-markdown status block (AFL progress, corpus action mix, last coverage); the agent pastes its output verbatim as the first part of every message |
+| `scripts/notify-discord.sh` | the only way to send: message on stdin, URL from `DISCORD_WEBHOOK` / `DISCORD_WEBHOOK_FILE` (repo-root `.env` with `DISCORD_WEBHOOK=…`, gitignored) / `~/.config/hydration-fuzz/discord-webhook`; never prints the URL |
+| `scripts/triage.sh` (`just triage`) | replay + classify a crash dir, appends to `targets/runtime/output/triage.log` |
+| `monitor/` (gitignored) | the memory between runs: `state/processed.tsv` (triaged inputs by sha1), `state/categories.tsv` (failure categories, notified or pending), `state/health.json`, `reports/<utc>.md` |
+
+The agent run is read-only with respect to builds, oracles, snapshots and the fuzzer itself; it only replays,
+classifies, writes its state/report and notifies. Known categories are seeded as already-notified so only a
+new category produces crash details in the message.
 
 ## Triaging crashes (procedure for an agent)
 
@@ -166,7 +186,7 @@ something else. Replay is read-only and does not disturb a running fuzzer; triag
    `saved_crashes` in `fuzzer_stats`: it is cumulative over resumed runs (see "Pitfalls").
 2. **Get the run's env.** `cat /proc/$(pgrep -f "afl-fuzz -c0" | head -1)/environ | tr '\0' '\n' | grep ^FUZZ_`.
    Replaying with a *different* env changes what fires (muted panics, oracles off, block-time limit).
-3. **Replay everything, one line per file:** `FUZZ_… ./triage.sh [DIR]` (defaults to the newest dir; appends to
+3. **Replay everything, one line per file:** `FUZZ_… scripts/triage.sh [DIR]` (defaults to the newest dir; appends to
    `targets/runtime/output/triage.log` and skips files already in it; `-a` redoes all). Each line is the first
    `VIOLATION[<oracle>] …` / `panicked at <file:line>`, `KNOWN …` (rolled back by `FUZZ_KNOWN_PANICS`), or
    `REPLAYS CLEAN`. The histogram at the end is the summary to report.
@@ -179,7 +199,7 @@ something else. Replay is read-only and does not disturb a running fuzzer; triag
    - `VIOLATION[differential] Some(Omnipool) …`: known simulator slip-fee gap. Stableswap/Aave/Uniswap differential
      violations are *not* known; treat as new.
    - `panicked at …hydration-node/…`: a runtime assert/overflow — new unless listed. Note whether it fired inside an
-     action (rolled back when known) or inside `finalize_block` (hooks: `on_idle`/`on_finalize`, never rolled back).
+     action (rolled back when known) or inside `finalize_block` (hooks: `on_idle`/`on_finalize`, known ones drop the scenario, others crash).
    - anything else: new.
 5. **Root-cause a new one.** `./target/release/hydration-fuzz-soak replay <file>` prints every action with its
    extrinsic, result, timing, and for trades `spent/received/predicted`. Read the trace backwards from the violation:
@@ -209,11 +229,16 @@ something else. Replay is read-only and does not disturb a running fuzzer; triag
   inputs re-evaluated by a new binary, typically a known finding under a renamed oracle.
 - Every crash in a directory tends to descend from one or two seeds (`src:N`); AFL re-finds a crash it has already
   found until it is muted. Dozens of files ≠ dozens of bugs.
-- The known-panic rollback only covers actions. The same assert raised from a block hook is still a crash; see
-  the aToken 1-wei entry below.
+- A known panic inside an action is rolled back; inside a block hook (`on_idle`/`on_finalize`, e.g. fee-processor
+  converting aToken fees) it cannot be, so the scenario is dropped (`known issue in block hook, scenario dropped`).
 - Contract-ledger assets (aTokens, HOLLAR) are ±1 wei per transfer by construction; the oracles allow 2 wei per
   swap. A 1-wei mismatch on those is not a finding.
 - Replay must run from `fuzz/` with the same `data/SNAPSHOT` the fuzzer used; a different snapshot changes amounts.
+- Inputs are raw bytes decoded by `arbitrary`; adding an `Action` variant or a `Flags` field changes what old bytes
+  mean (enum selectors are `x % N`). After such a change the AFL corpus is just re-evaluated, but saved reproducers
+  under `findings/` go stale: regenerate them with an unmuted soak
+  (`FUZZ_KNOWN_PANICS='' FUZZ_ORACLE_DIFFERENTIAL=1 FUZZ_KEEP_GOING=1 FUZZ_OUT=<dir> just soak 420`, then sort by
+  the printed panic key) and re-verify each with `replay`. Done last on 2026-10-07 for the lifecycle/single-actor change.
 
 ## Findings so far
 

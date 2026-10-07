@@ -2,6 +2,7 @@
 //!
 //!   hydration-fuzz-soak                 # soak (env: FUZZ_SECONDS, FUZZ_ITERS, FUZZ_SEED, FUZZ_LEN, FUZZ_OUT)
 //!   hydration-fuzz-soak replay FILE...  # re-run inputs verbosely (soak findings or AFL crashes/queue)
+//!   hydration-fuzz-soak stats DIR...    # histogram of action kinds in a corpus (decode only, no execution)
 //!   hydration-fuzz-soak seeds DIR [N]   # write N random inputs as an initial AFL corpus
 
 use harness::{default_snapshot_path, set_verbose, Engine};
@@ -34,7 +35,37 @@ fn main() {
 		let (dir, n) = (&args[1], args.get(2).and_then(|n| n.parse().ok()).unwrap_or(64u64));
 		std::fs::create_dir_all(dir).unwrap();
 		for i in 0..n {
-			std::fs::write(format!("{dir}/seed-{i}"), input(i, 512)).unwrap();
+			std::fs::write(format!("{dir}/seed-{i}"), input(i, 1536)).unwrap();
+		}
+		return;
+	}
+	if args.first().map(String::as_str) == Some("stats") {
+		// What the corpus is made of: decode every input (no execution) and count action kinds.
+		let (mut kinds, mut flags, mut n, mut undecodable) = (BTreeMap::<String, u64>::new(), BTreeMap::<&str, u64>::new(), 0u64, 0u64);
+		for dir in &args[1..] {
+			for e in std::fs::read_dir(dir).expect("read dir").flatten() {
+				let Ok(data) = std::fs::read(e.path()) else { continue };
+				let Some(sc) = harness::action::Scenario::decode(&data) else { undecodable += 1; continue };
+				n += 1;
+				*flags.entry("circuit_breaker_off").or_default() += sc.flags.circuit_breaker_off as u64;
+				*flags.entry("solve_each_block").or_default() += sc.flags.solve_each_block as u64;
+				*flags.entry("actor (single-actor mode)").or_default() += sc.flags.actor.is_some() as u64;
+				for a in &sc.actions {
+					let d = format!("{a:?}");
+					let name = d.split(|c: char| c == ' ' || c == '{' || c == '(').next().unwrap_or("?").to_string();
+					*kinds.entry(name).or_default() += 1;
+				}
+			}
+		}
+		let total: u64 = kinds.values().sum();
+		println!("{n} inputs ({undecodable} undecodable), {total} actions, {:.1} per input", total as f64 / n.max(1) as f64);
+		for (k, v) in &flags {
+			println!("  flag {k}: {v}/{n}");
+		}
+		let mut sorted: Vec<_> = kinds.into_iter().collect();
+		sorted.sort_by(|a, b| b.1.cmp(&a.1));
+		for (k, v) in sorted {
+			println!("{v:>8}  {:5.1}%  {k}", 100.0 * v as f64 / total.max(1) as f64);
 		}
 		return;
 	}
@@ -59,7 +90,7 @@ fn main() {
 	let seconds = env("FUZZ_SECONDS", 60u64);
 	let iters = env("FUZZ_ITERS", 0u64);
 	let seed = env("FUZZ_SEED", t0.elapsed().as_nanos() as u64 ^ std::process::id() as u64);
-	let max_len = env("FUZZ_LEN", 512usize);
+	let max_len = env("FUZZ_LEN", 1536usize);
 	let out = std::env::var("FUZZ_OUT").unwrap_or_else(|_| concat!(env!("CARGO_MANIFEST_DIR"), "/../../findings").into());
 	println!("soak seed={seed} len<={max_len} {}", if iters > 0 { format!("{iters} iters") } else { format!("{seconds}s") });
 

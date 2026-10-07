@@ -21,7 +21,9 @@ pub struct Bytes(pub Vec<u8>);
 
 impl<'a> Arbitrary<'a> for Bytes {
 	fn arbitrary(u: &mut Unstructured<'a>) -> arbitrary::Result<Self> {
-		let n = (u.arbitrary::<u16>()? as usize % 2048).min(u.len());
+		// Capped so one raw call / calldata / solution cannot swallow the rest of the input and end
+		// the scenario early (a SCALE call or ABI calldata rarely exceeds ~200 bytes).
+		let n = (u.arbitrary::<u16>()? as usize % 256).min(u.len());
 		Ok(Bytes(u.bytes(n)?.to_vec()))
 	}
 }
@@ -58,6 +60,9 @@ pub struct Flags {
 	pub circuit_breaker_off: bool,
 	/// Run the solver and settle at the end of every block that has valid intents.
 	pub solve_each_block: bool,
+	/// Single-actor mode: every acting account (`who`, `origin`, the liquidator) is this actor.
+	/// Victims, impersonated EVM senders and other targets stay as fuzzed.
+	pub actor: Option<u8>,
 }
 
 #[derive(Arbitrary, Debug, Clone)]
@@ -101,6 +106,24 @@ pub enum Action {
 	SolveAndSubmit,
 	SubmitSolution(Bytes),
 	RemoveIntent { who: u8, back: u8 },
+	/// Related Aave operations on one actor/reserve: supply `amount` of the underlying, advance
+	/// `lapse` blocks (0 = same block), withdraw `amount` resolved against the live aToken balance.
+	/// A failed supply is not fatal; the withdrawal then runs on whatever aTokens the actor holds.
+	AaveLifecycle { who: u8, reserve: u8, amount: Amount, lapse: u8 },
+	/// Self-contained ICE round: submit up to 6 intents (each as `SubmitIntent`), advance `lapse`
+	/// blocks, run the solver and settle. With `mutate`, a nudged copy of the solver's solution is
+	/// thrown at the pallet validator first.
+	IceRound { intents: Vec<IntentSpec>, lapse: u8, mutate: Option<u8> },
+}
+
+#[derive(Arbitrary, Debug, Clone, Copy)]
+pub struct IntentSpec {
+	pub who: u8,
+	pub asset_in: u16,
+	pub asset_out: u16,
+	pub amount_in: Amount,
+	pub limit: u8,
+	pub partial: bool,
 }
 
 #[derive(Arbitrary, Debug, Clone, Copy)]
@@ -182,6 +205,10 @@ impl Scenario {
 		let mut actions = Vec::new();
 		while !u.is_empty() && actions.len() < crate::MAX_ACTIONS {
 			match Action::arbitrary(&mut u) {
+				// Zero bytes decode to variant 0 with empty fields: an empty raw call. AFL pads inputs
+				// (-g min length, block inserts) with constant bytes, which would otherwise append
+				// dozens of these no-ops; treat the first one as end of input instead.
+				Ok(Action::Raw { call, .. }) if call.0.is_empty() => break,
 				Ok(a) => actions.push(a),
 				Err(_) => break,
 			}
@@ -200,21 +227,64 @@ pub fn execute(s: &Scenario, t: &Tables, cfg: &oracle::Config, first_block: u32)
 	if s.flags.circuit_breaker_off {
 		disable_circuit_breaker(t);
 	}
+	crate::set_actor_override(s.flags.actor);
+	struct ResetActor;
+	impl Drop for ResetActor {
+		fn drop(&mut self) {
+			crate::set_actor_override(None);
+		}
+	}
+	let _reset = ResetActor;
 	let mut started = Instant::now();
 	let mut weight = 0u64;
+	// Finalize the current block and start a new one `n + 1` blocks later; false = scenario dropped.
+	let mut advance = |n: u16, block: &mut u32, started: &mut Instant, weight: &mut u64| -> bool {
+		if s.flags.solve_each_block {
+			guarded(cfg, || ice::solve_and_submit(cfg));
+		}
+		if !end_block(cfg, *block, started.elapsed(), false) {
+			return false;
+		}
+		*block += 1 + u32::from(n);
+		block::initialize_block(*block, None);
+		*started = Instant::now();
+		*weight = 0;
+		true
+	};
 	for a in &s.actions {
 		log!("> {a:?}");
 		let t0 = Instant::now();
 		match a {
 			Action::Lapse(n) => {
-				if s.flags.solve_each_block {
-					guarded(cfg, || ice::solve_and_submit(cfg));
+				if !advance(*n, &mut block, &mut started, &mut weight) {
+					return;
 				}
-				end_block(cfg, block, started.elapsed(), false);
-				block += 1 + u32::from(*n);
-				block::initialize_block(block, None);
-				started = Instant::now();
-				weight = 0;
+			}
+			Action::AaveLifecycle { who, reserve, amount, lapse } => {
+				let supply = Action::AaveTrade { who: *who, reserve: *reserve, supply: true, amount: *amount };
+				guarded(cfg, || run_one(&supply, t, cfg, &mut weight));
+				if *lapse > 0 && !advance(u16::from(*lapse) - 1, &mut block, &mut started, &mut weight) {
+					return;
+				}
+				let withdraw = Action::AaveTrade { who: *who, reserve: *reserve, supply: false, amount: *amount };
+				guarded(cfg, || run_one(&withdraw, t, cfg, &mut weight));
+			}
+			Action::IceRound { intents, lapse, mutate } => {
+				for i in intents.iter().take(6) {
+					let a = Action::SubmitIntent { who: i.who, asset_in: i.asset_in, asset_out: i.asset_out, amount_in: i.amount_in, limit: i.limit, partial: i.partial };
+					guarded(cfg, || run_one(&a, t, cfg, &mut weight));
+				}
+				if *lapse > 0 && !advance(u16::from(*lapse) - 1, &mut block, &mut started, &mut weight) {
+					return;
+				}
+				guarded(cfg, || {
+					if let Some((originals, solution)) = ice::solve() {
+						if let Some(m) = mutate {
+							ice::submit_mutated(cfg, &originals, &solution, *m);
+						}
+						ice::submit_solver_solution(cfg, &originals, solution);
+					}
+				});
 			}
 			a => guarded(cfg, || run_one(a, t, cfg, &mut weight)),
 		}
@@ -223,7 +293,7 @@ pub fn execute(s: &Scenario, t: &Tables, cfg: &oracle::Config, first_block: u32)
 	if s.flags.solve_each_block {
 		guarded(cfg, || ice::solve_and_submit(cfg));
 	}
-	end_block(cfg, block, started.elapsed(), true);
+	let _ = end_block(cfg, block, started.elapsed(), true);
 }
 
 fn run_one(a: &Action, t: &Tables, cfg: &oracle::Config, weight: &mut u64) {
@@ -292,15 +362,30 @@ fn guarded(cfg: &oracle::Config, f: impl FnOnce()) {
 	storage::clear(SENTINEL);
 }
 
-fn end_block(cfg: &oracle::Config, block: u32, elapsed: Duration, last: bool) {
+/// Finalize the block and run the per-block oracles. A known panic raised from a block hook
+/// (`on_idle`/`on_finalize`, e.g. fee-processor converting aToken fees) cannot be rolled back like an
+/// action, so the scenario is dropped instead: returns `false` and the caller stops.
+fn end_block(cfg: &oracle::Config, block: u32, elapsed: Duration, last: bool) -> bool {
 	if elapsed > cfg.max_block_time {
 		oracle::violation("block_time", format!("block {block} took {elapsed:?}"));
 	}
 	let t0 = Instant::now();
-	block::finalize_block();
+	let hook = std::panic::take_hook();
+	std::panic::set_hook(Box::new(|_| {}));
+	let r = std::panic::catch_unwind(block::finalize_block);
+	std::panic::set_hook(hook);
+	if let Err(p) = r {
+		let msg = p.downcast_ref::<String>().map(String::as_str).or_else(|| p.downcast_ref::<&str>().copied()).unwrap_or("");
+		if cfg.known_panics.iter().any(|k| msg.contains(k.as_str())) {
+			log!("  known issue in block hook, scenario dropped: {msg}");
+			return false;
+		}
+		std::panic::resume_unwind(p);
+	}
 	let t1 = Instant::now();
 	oracle::after_block(cfg, block, last);
 	log!("  finalize {:?}, try_state {:?}", t1 - t0, t1.elapsed());
+	true
 }
 
 fn disable_circuit_breaker(t: &Tables) {
@@ -351,7 +436,7 @@ fn find_call(call: &RuntimeCall, f: &dyn Fn(&RuntimeCall) -> bool) -> bool {
 	}
 }
 
-fn bal(asset: AssetId, who: &AccountId) -> Balance {
+pub fn bal(asset: AssetId, who: &AccountId) -> Balance {
 	hydradx_runtime::Currencies::free_balance(asset, who)
 }
 
@@ -886,7 +971,12 @@ fn run(a: &Action, t: &Tables, cfg: &oracle::Config) {
 		SubmitIntent { who, asset_in, asset_out, amount_in, limit, partial } => {
 			let (Some(ai), Some(ao)) = (pick(&t.omnipool, *asset_in), pick(&t.omnipool, *asset_out)) else { return };
 			let w = actor(*who);
-			let amount_in = amount_in.resolve(bal(ai, &w), t.decimals(ai));
+			let ed = |a: AssetId| <hydradx_runtime::AssetRegistry as hydradx_traits::registry::Inspect>::existential_deposit(a).unwrap_or(1).max(1);
+			// Frac amounts are meant to be realistic: keep them above the ED the pallet requires. Units/Raw stay as fuzzed.
+			let amount_in = match amount_in {
+				Amount::Frac(_) => amount_in.resolve(bal(ai, &w), t.decimals(ai)).max(ed(ai)),
+				_ => amount_in.resolve(bal(ai, &w), t.decimals(ai)),
+			};
 			let quote = pallet_route_executor::Pallet::<Runtime>::calculate_expected_amount_out(
 				&pallet_route_executor::Pallet::<Runtime>::get_route_or_default(ai, ao, &Default::default()),
 				amount_in,
@@ -900,14 +990,14 @@ fn run(a: &Action, t: &Tables, cfg: &oracle::Config) {
 				(0..=8, None) => 1,
 				_ => u128::MAX / 4,
 			}
-			.max(1);
+			.max(ed(ao));
 			log!("  quote {quote:?} -> min out {amount_out}");
 			ice::submit_intent(w, ai, ao, amount_in, amount_out, *partial);
 		}
 		SolveAndSubmit => ice::solve_and_submit(cfg),
 		SubmitSolution(b) => ice::submit_raw_solution(cfg, &b.0),
 		RemoveIntent { who, back } => ice::remove_intent(actor(*who), *back),
-		Raw { .. } | Lapse(_) => unreachable!(),
+		Raw { .. } | Lapse(_) | AaveLifecycle { .. } | IceRound { .. } => unreachable!(),
 	}
 }
 

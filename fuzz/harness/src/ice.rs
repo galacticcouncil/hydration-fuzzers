@@ -57,12 +57,13 @@ fn report(kind: &str, v: Vec<Violation>) {
 	}
 }
 
-/// Run the production solver on the current (possibly heavily drifted) state and submit.
-pub fn solve_and_submit(cfg: &oracle::Config) {
+/// Run the production solver on the current (possibly heavily drifted) state. Returns the valid
+/// intents it saw and the solution, if any.
+pub fn solve() -> Option<(Vec<SolverIntent>, Solution)> {
 	let originals = valid_intents();
 	log!("  {} valid intents ({} stored)", originals.len(), pallet_intent::Intents::<Runtime>::iter_keys().count());
 	if originals.is_empty() {
-		return;
+		return None;
 	}
 	let fee = fee();
 	let block = frame_system::Pallet::<Runtime>::block_number();
@@ -71,14 +72,59 @@ pub fn solve_and_submit(cfg: &oracle::Config) {
 	});
 	let Some(pallet_ice::Call::submit_solution { solution }) = call else {
 		log!("  solver: no solution for {} intents", originals.len());
-		return;
+		return None;
 	};
+	Some((originals, solution))
+}
+
+/// Submit the solver's own solution: it must respect every limit (not re-checked on chain) and settle.
+pub fn submit_solver_solution(cfg: &oracle::Config, originals: &[SolverIntent], solution: Solution) {
 	if cfg.ice {
-		// Limit respect is not re-checked by the pallet on submit.
-		report("ice_solution", check_solution(&originals, &solution, fee, false));
+		report("ice_solution", check_solution(originals, &solution, fee(), false));
 	}
 	let r = settle(cfg, &solution);
 	log!("  submit_solution (solver) => {:?}", r.map(|_| ()));
+}
+
+pub fn solve_and_submit(cfg: &oracle::Config) {
+	if let Some((originals, solution)) = solve() {
+		submit_solver_solution(cfg, &originals, solution);
+	}
+}
+
+/// A solution that is not the solver's (fuzzed or mutated): the pallet is expected to reject it;
+/// if it accepts, the solution must still satisfy the independent oracle, else the validator is the bug.
+fn submit_fuzzed(cfg: &oracle::Config, label: &str, originals: &[SolverIntent], solution: &Solution) {
+	let r = settle(cfg, solution);
+	log!("  submit_solution ({label}) => {:?}", r.map(|_| ()));
+	if r.is_ok() && cfg.ice {
+		report("ice_validator", check_solution(originals, solution, fee(), true));
+	}
+}
+
+/// The solver's solution with one field nudged (a near-valid solution is a much better validator
+/// probe than random bytes): `m` picks the resolved intent and the kind of nudge.
+pub fn submit_mutated(cfg: &oracle::Config, originals: &[SolverIntent], solution: &Solution, m: u8) {
+	let mut s = solution.clone();
+	let n = s.resolved_intents.len();
+	if n == 0 {
+		return;
+	}
+	let r = &mut s.resolved_intents[usize::from(m) % n];
+	let kind = (m / 8) % 5;
+	if let ice_support::IntentData::Swap(sw) = &mut r.data {
+		match kind {
+			0 => sw.amount_out = sw.amount_out.saturating_add(1),
+			1 => sw.amount_out = sw.amount_out.saturating_mul(2),
+			2 => sw.amount_in = sw.amount_in.saturating_sub(1),
+			3 => sw.amount_out = sw.amount_out.saturating_sub(1),
+			_ => s.score = s.score.saturating_add(1),
+		}
+	} else {
+		s.score = s.score.saturating_add(1);
+	}
+	log!("  mutated solution: intent #{} nudge {kind}", usize::from(m) % n);
+	submit_fuzzed(cfg, "mutated", originals, &s);
 }
 
 type Currencies = hydradx_runtime::Currencies;
@@ -181,9 +227,5 @@ pub fn submit_raw_solution(cfg: &oracle::Config, bytes: &[u8]) {
 	for (r, o) in solution.resolved_intents.iter_mut().zip(originals.iter()) {
 		r.id = o.id;
 	}
-	let r = settle(cfg, &solution);
-	log!("  submit_solution (raw) => {:?}", r.map(|_| ()));
-	if r.is_ok() && cfg.ice {
-		report("ice_validator", check_solution(&originals, &solution, fee(), true));
-	}
+	submit_fuzzed(cfg, "raw", &originals, &solution);
 }

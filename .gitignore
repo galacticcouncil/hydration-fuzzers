@@ -19,3 +19,4 @@ fuzz/data/SNAPSHOT
 fuzz/findings/*.bin
 fuzz/targets/*/output/
 fuzz/targets/*/seeds/
+fuzz/monitor/

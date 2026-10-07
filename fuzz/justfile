@@ -1,0 +1,94 @@
+# Hydration fuzzing v2 — see README.md for the full runbook. `just --list` for targets.
+
+set shell := ["bash", "-euo", "pipefail", "-c"]
+set positional-arguments
+
+# Environment every cargo/ziggy call needs (MAKEFLAGS breaks AFL++'s make, wasm build is useless here,
+# RocksDB needs cstdint on GCC>=13).
+env := "env -u MAKEFLAGS SKIP_WASM_BUILD=1 CXXFLAGS=-include\\ cstdint"
+# Only the AFL target carries LLVM coverage counters (one binary for fuzzing and `just cover`);
+# the soak/snapshot binaries must not, or every replay drops a .profraw file.
+afl_build_env := env + " RUSTFLAGS=-Cinstrument-coverage"
+afl_env := "AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 AFL_SKIP_CPUFREQ=1 LLVM_PROFILE_FILE=/dev/null"
+noprof := "LLVM_PROFILE_FILE=/dev/null"
+
+# Oracle/known-finding defaults for fuzz runs; override per invocation, e.g. `just known='' fuzz`.
+known := "Transfer - source sent incorrect amount|Transfer - dest received incorrect amount|VIOLATION[accounting] 1001->222|VIOLATION[router_leftover] 222->1001"
+fuzz_env := "FUZZ_KNOWN_PANICS='" + known + "' FUZZ_ORACLE_DIFFERENTIAL=0 FUZZ_MAX_BLOCK_MS=20000"
+
+out := "targets/runtime/output/hydration-fuzz-runtime"
+
+# One-time: fuzzing tools + AFL++ runtime for the pinned nightly
+setup:
+    cargo install --locked ziggy@1.2.1 cargo-afl grcov
+    rustup component add llvm-tools-preview
+    env -u MAKEFLAGS cargo afl config --build --force
+
+# Soak runner + snapshot tool (release)
+build:
+    {{env}} cargo build --release
+
+# AFL target (AFL + coverage instrumented); ~2 h cold, minutes incremental
+build-afl:
+    cd targets/runtime && {{afl_build_env}} cargo ziggy build --no-honggfuzz --release
+
+# Patch a scraped mainnet snapshot into data/SNAPSHOT (default source: node's SNAPSHOT_uni)
+snapshot src="" dst="data/SNAPSHOT":
+    {{noprof}} ./target/release/hydration-fuzz-snapshot {{src}} {{dst}}
+
+# Harness self-tests against data/SNAPSHOT
+test:
+    {{env}} cargo test --release -p hydration-fuzz-harness
+
+# Seeded soak run without AFL, e.g. `just soak 600`
+soak seconds="300":
+    FUZZ_SECONDS={{seconds}} {{fuzz_env}} {{noprof}} ./target/release/hydration-fuzz-soak
+
+# Replay one or more inputs verbosely (soak findings or AFL crash files)
+replay +files:
+    {{fuzz_env}} {{noprof}} ./target/release/hydration-fuzz-soak replay "$@"
+
+# Generate N seed inputs for AFL
+seeds n="64":
+    {{noprof}} ./target/release/hydration-fuzz-soak seeds targets/runtime/seeds {{n}}
+
+# Start AFL fuzzing (resumes an existing queue; see `just restart` for a clean start). -g 768 keeps inputs
+# >= ~12 actions (AFL otherwise drifts to 3-4 actions per input); -G 4096 caps at the 48-action bound.
+fuzz jobs="4":
+    cd targets/runtime && {{fuzz_env}} {{afl_build_env}} {{afl_env}} \
+        cargo ziggy fuzz --no-honggfuzz --release -j {{jobs}} -t 22 -g 768 -G 4096 -i seeds
+
+# Park the old queue/corpus so the next `just fuzz` starts from the seeds (no long dry run)
+restart:
+    ts=$(date +%s); \
+    [ -d {{out}}/afl ] && mv {{out}}/afl {{out}}/afl.$ts || true; \
+    rm -rf {{out}}/corpus; \
+    [ -d targets/runtime/seeds ] || just seeds; \
+    echo "queue parked as afl.$ts; now: just fuzz"
+
+# Histogram of action kinds in a corpus (decode only), default: the live AFL corpus
+stats-corpus dir=(out + "/corpus"):
+    {{noprof}} ./target/release/hydration-fuzz-soak stats {{dir}}
+
+# One-screen fuzzer status (AFL progress, corpus action mix, last coverage); `just notify-status` sends it
+status:
+    ./scripts/monitor-status.sh
+
+notify-status:
+    ./scripts/monitor-status.sh | DISCORD_WEBHOOK_FILE=../.env ./scripts/notify-discord.sh
+
+# Monitor pre-check: exit 0 if there are untriaged crash files or the fuzzer looks dead/stalled, else 1
+gate:
+    ./scripts/monitor-gate.sh
+
+# Live stats of the running AFL instances
+stats:
+    grep -E "run_time|execs_per_sec|corpus_count|saved_crashes|stability" {{out}}/afl/*/fuzzer_stats | paste - - - - -
+
+# Replay every crash in DIR (default: newest crash dir), one line each + histogram
+triage dir="":
+    {{fuzz_env}} ./scripts/triage.sh {{dir}}
+
+# Line coverage of the corpus through the AFL binary -> targets/runtime/output/coverage/
+cover corpus="":
+    ./scripts/coverage.sh {{corpus}}
