@@ -28,7 +28,7 @@ just build-afl                   # AFL target (AFL + coverage instrumented)
 
 # 4. starting state: scrape current mainnet (network; builds the node's scraper first, ~30-60 min cold),
 #    then patch it into the fuzzer's state
-just scrape 0x<block hash>       # pin a finalized block for reproducibility; `just scrape` = latest finalized
+just scrape 0x<block hash>       # whole mainnet state; pin a finalized block for reproducibility (`just scrape` = latest)
 just snapshot                    # data/scrape/SNAPSHOT -> data/SNAPSHOT (actors funded, EVM bound, params)
 just test                        # 6 self-tests against it
 #    (offline fallback: with no scrape present, `just snapshot` uses the node repo's committed April-2026 snapshot)
@@ -49,7 +49,7 @@ Keep the block hash with the snapshot (findings only reproduce against the same 
 rustup show                                                  # should mention nightly-2025-06-27 once inside fuzz/
 
 # fuzzing tools (ziggy must be 1.2.1 to match the lib pin in Cargo.toml)
-cargo install --locked ziggy@1.2.1 cargo-afl grcov
+cargo install --locked ziggy@1.2.1 cargo-afl@0.18.2 grcov
 env -u MAKEFLAGS cargo afl config --build --force           # builds the AFL++ runtime for this nightly
 
 # system packages (Arch names): clang, protobuf, binutils, libunwind
@@ -98,20 +98,21 @@ cd ../../hydration-node
 cargo build --release -p scraper
 
 # Pick a block: finalized head is fine; pass --at <hash> to pin one (recommended, so the snapshot is reproducible).
-# --slim drops user accounts and keeps protocol/pool/contract/dev accounts (17-25 MB instead of >100 MB).
+# Whole state by default (~400 MB file, ~1.4 GB RAM per AFL instance, 1.7 s load): user accounts, reserves and
+# money-market positions are all consistent. `--slim` (`just slim="--slim" scrape`) keeps only protocol/pool/
+# contract/dev accounts (~56 MB, ~180 MB RAM) but drops the reserves/positions of ordinary users, which leaves
+# e.g. pending intents inconsistent. Throughput is the same either way.
 # No --pallet filter: the fuzzer needs every pallet (EVM, Parameters, Liquidation, Dispatcher, ICE, ...).
 mkdir -p /tmp/hydra-scrape
 ./target/release/scraper save-storage \
     --uri wss://rpc.hydradx.cloud:443 \
     --at <BLOCK_HASH> \
-    --slim \
     --path /tmp/hydra-scrape
 # -> /tmp/hydra-scrape/SNAPSHOT
 cd -
 ```
 
-A full (non-slim) scrape also works and loads fine (~6× larger); use it only if you need user accounts that slim drops
-(e.g. money-market positions of specific users).
+Size the AFL instance count to RAM: `just fuzz N` with N × 1.4 GB (full state) or N × 0.2 GB (slim).
 
 ### 2b. Patch it into the fuzzer's starting state (`just snapshot`)
 
@@ -256,5 +257,5 @@ by hand or on any schedule, inspects the running fuzzer, triages new crashes and
 
 See "Findings so far" in AGENTS.md. As of 2026-10-02: aToken transfers are ±1 wei vs the `pallet-currencies`
 try-runtime assert (mute: the two `Transfer - ...` strings above); the Uniswap v3 partial-fill leak
-(`VIOLATION[router_leftover] 222->1001`); the Omnipool simulator's missing in-block slip-fee state
+(`VIOLATION[router_leftover]` (any Uniswap pool)); the Omnipool simulator's missing in-block slip-fee state
 (`FUZZ_ORACLE_DIFFERENTIAL=0` until fixed in `amm-simulator`).

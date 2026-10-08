@@ -13,16 +13,17 @@ afl_env := "AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1 AFL_SKIP_CPUFREQ=1 LLVM_PROF
 noprof := "LLVM_PROFILE_FILE=/dev/null"
 
 # Oracle/known-finding defaults for fuzz runs; override per invocation, e.g. `just known='' fuzz`.
-known := "Transfer - source sent incorrect amount|Transfer - dest received incorrect amount|VIOLATION[accounting] 1001->222|VIOLATION[router_leftover] 222->1001"
+known := "Transfer - source sent incorrect amount|Transfer - dest received incorrect amount|VIOLATION[accounting] 1001->222|VIOLATION[router_leftover]"
 fuzz_env := "FUZZ_KNOWN_PANICS='" + known + "' FUZZ_ORACLE_DIFFERENTIAL=0 FUZZ_MAX_BLOCK_MS=20000"
 
 out := "targets/runtime/output/hydration-fuzz-runtime"
-# Scrape mode: "--slim" drops ordinary user accounts; "" keeps the whole mainnet state.
-slim := "--slim"
+# Scrape mode: "" = whole mainnet state (default; ~1.4 GB RAM per AFL instance, consistent intents/positions);
+# "--slim" drops ordinary user accounts (~180 MB per instance, but reserves/positions of dropped users are gone).
+slim := ""
 
 # One-time: fuzzing tools + AFL++ runtime for the pinned nightly
 setup:
-    cargo install --locked ziggy@1.2.1 cargo-afl grcov
+    cargo install --locked ziggy@1.2.1 cargo-afl@0.18.2 grcov
     rustup component add llvm-tools-preview
     env -u MAKEFLAGS cargo afl config --build --force
 
@@ -37,7 +38,7 @@ build-afl:
 # Scrape current mainnet state (slim: protocol/pool/contract accounts, all pallets) -> data/scrape/SNAPSHOT.
 # `just scrape 0x<block hash>` pins a block (recommended: reproducible); default = latest finalized.
 # Builds the node's scraper first (~30-60 min cold, in ../../hydration-node/target). Needs network.
-# `just slim="" scrape` keeps every account (full state: bigger file/RAM, no dropped owners).
+# `just slim="--slim" scrape` for the slim variant.
 scrape at="" uri="wss://rpc.hydradx.cloud:443":
     cd ../../hydration-node && {{env}} cargo build --release -p scraper
     mkdir -p data/scrape

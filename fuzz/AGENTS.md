@@ -111,7 +111,7 @@ Measured with `afl-showmap` on one Aave-heavy input: 24.2k tuples without, 38.9k
 
 ## Snapshot pipeline (`snapshot/`)
 
-Base: a fresh slim mainnet scrape, `just scrape [BLOCK_HASH]` → `data/scrape/SNAPSHOT` (builds the node's `scraper`, `save-storage --slim`, all pallets). Record the block hash next to it: findings reproduce only against the same state. Offline fallback when no scrape exists: the node repo's committed `integration-tests/snapshots/ice/SNAPSHOT_uni` (April 2026, slim, Aave + one Uniswap v3 pool).
+Base: a fresh mainnet scrape, `just scrape [BLOCK_HASH]` → `data/scrape/SNAPSHOT` (builds the node's `scraper`; whole state by default, ~413 MB / 1.4 GB RAM per process / 1.7 s load; `just slim="--slim" scrape` for the 56 MB variant that drops ordinary user accounts and with them their reserves and positions). Record the block hash next to it: findings reproduce only against the same state. Offline fallback when no scrape exists: the node repo's committed `integration-tests/snapshots/ice/SNAPSHOT_uni` (April 2026, slim, Aave + one Uniswap v3 pool).
 Patch, all Substrate-side:
 1. `hydra_live_ext` steps: relay-parent offset override, ema-oracle v1 + stableswap v2 migrations, register Aave wraps for ICE.
 2. Endow the 20 actors with 10M units of HDX, WETH, every sufficient asset and every asset traded by a venue
@@ -260,6 +260,15 @@ something else. Replay is read-only and does not disturb a running fuzzer; triag
   simulator, so it can over-promise. Not root-caused. `findings/omnipool-differential/<file>`.
 - EVM `Panic(0x11)` in HOLLAR (`0xc0df4c54…`) on HSM buy when the buyer lacks collateral: expected solmate behaviour,
   hence the default ignore.
+
+- **Fresh mainnet state (2026-10-08, block 15539990, full scrape):** three places where the harness's fabricated
+  inherents collided with real state, all fixed by continuing from stored values: relay block number
+  (`RelayNumberMonotonicallyIncreases`), the DMQ MQC head in the fake relay proof, and the non-empty unincluded
+  segment (cleared in the patch step; the fake proof declares async backing off). Pending mainnet intents are
+  cancelled in the patch step by default (the solver spent ~1 s per solve on 34 of them with no solution).
+  The Uniswap partial-fill leak reproduced on a second pool (`1006->222`): it is the executor, mute with
+  `VIOLATION[router_leftover]` (any pool). `InsufficientEDinHDX` (1.1 HDX charged on first receipt of an
+  insufficient asset) looked like an XYK accounting mismatch; the accounting oracle now allows it.
 
 ## Known limitations / next steps
 
