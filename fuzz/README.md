@@ -9,6 +9,39 @@ whatever runtime is checked out there.
 `just --list` shows one target per step below (`just setup`, `build`, `build-afl`, `snapshot`, `test`, `soak`, `fuzz`,
 `restart`, `stats`, `triage`, `replay`, `cover`); the sections keep the raw commands so you can see what each does.
 
+## Quick start on a new machine
+
+```bash
+# 1. both repos side by side (the fuzzer depends on ../hydration-node by relative path)
+mkdir gc && cd gc
+git clone <hydration-node>  hydration-node
+git clone <hydration-fuzzers> hydration-fuzzers
+cd hydration-fuzzers/fuzz
+
+# 2. toolchain + tools (rustup installs the pinned nightly on first cargo call; apt/pacman: clang protobuf
+#    binutils libunwind python3 curl just)
+just setup                       # ziggy 1.2.1, cargo-afl, grcov, llvm-tools, AFL++ runtime
+
+# 3. binaries (~1.5 h cold for both; the two builds can run back to back)
+just build                       # soak runner + snapshot tool
+just build-afl                   # AFL target (AFL + coverage instrumented)
+
+# 4. starting state: scrape current mainnet (network; builds the node's scraper first, ~30-60 min cold),
+#    then patch it into the fuzzer's state
+just scrape 0x<block hash>       # pin a finalized block for reproducibility; `just scrape` = latest finalized
+just snapshot                    # data/scrape/SNAPSHOT -> data/SNAPSHOT (actors funded, EVM bound, params)
+just test                        # 6 self-tests against it
+#    (offline fallback: with no scrape present, `just snapshot` uses the node repo's committed April-2026 snapshot)
+
+# 5. fuzz
+just seeds && just fuzz          # Ctrl+C to stop; `just restart && just fuzz` for a clean restart later
+just stats                       # progress;  just status  = the one-screen summary;  just triage = crashes
+```
+
+Keep the block hash with the snapshot (findings only reproduce against the same state); `.env` with `DISCORD_WEBHOOK=…` plus `pi` enables the monitor
+(`MONITOR.md`). Nothing else is machine-specific: the `justfile` already works around the known host quirks
+(`MAKEFLAGS`, RocksDB on new GCC, no wasm build).
+
 ## 0. Prerequisites
 
 ```bash
@@ -58,7 +91,7 @@ The fuzzer starts every input from one fixed state: `data/SNAPSHOT`, a v4 `scrap
 plus Substrate-side patches (funded actors, EVM bindings, parameters). Contracts are never deployed or modified; the
 EVM state is exactly what mainnet has.
 
-### 2a. Scrape mainnet with the node's `scraper`
+### 2a. Scrape mainnet with the node's `scraper` (`just scrape [BLOCK_HASH]` does all of this)
 
 ```bash
 cd ../../hydration-node
@@ -80,7 +113,7 @@ cd -
 A full (non-slim) scrape also works and loads fine (~6× larger); use it only if you need user accounts that slim drops
 (e.g. money-market positions of specific users).
 
-### 2b. Patch it into the fuzzer's starting state
+### 2b. Patch it into the fuzzer's starting state (`just snapshot`)
 
 ```bash
 ./target/release/hydration-fuzz-snapshot /tmp/hydra-scrape/SNAPSHOT data/SNAPSHOT

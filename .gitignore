@@ -16,6 +16,7 @@ memory_map.output
 .env
 
 fuzz/data/SNAPSHOT
+fuzz/data/scrape/
 fuzz/findings/*.bin
 fuzz/targets/*/output/
 fuzz/targets/*/seeds/

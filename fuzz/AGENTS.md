@@ -111,7 +111,7 @@ Measured with `afl-showmap` on one Aave-heavy input: 24.2k tuples without, 38.9k
 
 ## Snapshot pipeline (`snapshot/`)
 
-Base: `hydration-node/integration-tests/snapshots/ice/SNAPSHOT_uni` (v4, slim, has Aave + the one Uniswap v3 pool).
+Base: a fresh slim mainnet scrape, `just scrape [BLOCK_HASH]` → `data/scrape/SNAPSHOT` (builds the node's `scraper`, `save-storage --slim`, all pallets). Record the block hash next to it: findings reproduce only against the same state. Offline fallback when no scrape exists: the node repo's committed `integration-tests/snapshots/ice/SNAPSHOT_uni` (April 2026, slim, Aave + one Uniswap v3 pool).
 Patch, all Substrate-side:
 1. `hydra_live_ext` steps: relay-parent offset override, ema-oracle v1 + stableswap v2 migrations, register Aave wraps for ICE.
 2. Endow the 20 actors with 10M units of HDX, WETH, every sufficient asset and every asset traded by a venue
