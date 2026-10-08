@@ -240,6 +240,28 @@ mod tests {
 		assert!(left < 3, "no intent was settled: {left} of 3 still stored");
 	}
 
+	/// Mainnet state stores the real relay block number; block production must continue from it
+	/// (the runtime panics if it ever goes down).
+	#[test]
+	fn relay_number_continues_from_state() {
+		let path = super::default_snapshot_path();
+		if !std::path::Path::new(&path).exists() {
+			return;
+		}
+		let mut engine = super::Engine::new(&path);
+		let para = engine.ext.execute_with(|| frame_system::Pallet::<hydradx_runtime::Runtime>::block_number());
+		let high = para + 10_000_000;
+		engine.ext.execute_with(|| cumulus_pallet_parachain_system::LastRelayChainBlockNumber::<hydradx_runtime::Runtime>::put(high));
+		engine.ext.commit_all().unwrap();
+		let s = Scenario {
+			flags: Flags { circuit_breaker_off: false, solve_each_block: false, actor: None },
+			actions: vec![Action::Lapse(3), Action::Lapse(0)],
+		};
+		engine.run_scenario(&s);
+		let after = engine.ext.execute_with(cumulus_pallet_parachain_system::Pallet::<hydradx_runtime::Runtime>::last_relay_block_number);
+		assert!(after > high, "relay number did not continue from stored state: {high} -> {after}");
+	}
+
 	#[test]
 	fn amount_resolves() {
 		assert_eq!(Amount::Frac(255).resolve(1000, 12), 1000);

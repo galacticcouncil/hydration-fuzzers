@@ -50,6 +50,7 @@ pallet-multisig = { git = "https://github.com/galacticcouncil/polkadot-sdk", bra
 pallet-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
 staging-xcm = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
 polkadot-primitives = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+cumulus-pallet-parachain-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
 cumulus-primitives-core = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
 cumulus-primitives-parachain-inherent = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
 cumulus-test-relay-sproof-builder = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }

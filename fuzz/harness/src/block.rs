@@ -50,10 +50,15 @@ pub fn initialize_block(block: u32, prev_header: Option<&Header>) {
 		..Default::default()
 	};
 	let (relay_parent_storage_root, relay_chain_state) = sproof_builder.into_state_root_and_proof();
+	// Mainnet state carries the real relay block number and the runtime asserts it never decreases, so
+	// continue from it: one relay block per parachain block (legacy `relay = block` only works on states
+	// whose stored relay number happens to be below the parachain height).
+	let last_relay = ParachainSystem::last_relay_block_number();
+	let relay_parent_number = if last_relay == 0 { block } else { last_relay + (block - last_block) };
 	let data = ParachainInherentData {
 		validation_data: polkadot_primitives::PersistedValidationData {
 			parent_head,
-			relay_parent_number: block,
+			relay_parent_number,
 			relay_parent_storage_root,
 			max_pov_size: 1000,
 		},

@@ -44,7 +44,7 @@ scrape at="" uri="wss://rpc.hydradx.cloud:443":
 # Patch a scraped snapshot into the fuzzer's starting state data/SNAPSHOT.
 # Default source: data/scrape/SNAPSHOT from `just scrape`; falls back to the node repo's committed
 # integration-tests/snapshots/ice/SNAPSHOT_uni (April 2026) when no scrape exists.
-snapshot src="" dst="data/SNAPSHOT":
+snapshot src="" dst="data/SNAPSHOT": build
     src="{{src}}"; [ -n "$src" ] || { [ -f data/scrape/SNAPSHOT ] && src=data/scrape/SNAPSHOT || src=../../hydration-node/integration-tests/snapshots/ice/SNAPSHOT_uni; }; \
     echo "source: $src"; \
     {{noprof}} ./target/release/hydration-fuzz-snapshot "$src" {{dst}}
@@ -62,7 +62,7 @@ replay +files:
     {{fuzz_env}} {{noprof}} ./target/release/hydration-fuzz-soak replay "$@"
 
 # Generate N seed inputs for AFL
-seeds n="64":
+seeds n="64": build
     {{noprof}} ./target/release/hydration-fuzz-soak seeds targets/runtime/seeds {{n}}
 
 # Start AFL fuzzing (resumes an existing queue; see `just restart` for a clean start). -g 768 keeps inputs
