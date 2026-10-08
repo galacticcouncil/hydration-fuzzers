@@ -199,6 +199,16 @@ pub fn check_trade(cfg: &Config, tr: Trade, dispatch: impl FnOnce() -> bool) {
 	}
 	let predicted = tr.sim.filter(|_| cfg.differential).and_then(|p| simulate(p, &tr));
 	let (in0, out0) = (bal(tr.asset_in, &tr.who), bal(tr.asset_out, &tr.who));
+	// First receipt of an insufficient asset charges the ED in HDX (`InsufficientEDinHDX`) from the
+	// trader on top of the swap: allowed as extra HDX spend, it is not part of the trade.
+	let ed_fee: i128 = if tr.asset_in == 0
+		&& !orml_tokens::Accounts::<Runtime>::contains_key(&tr.who, tr.asset_out)
+		&& !<hydradx_runtime::AssetRegistry as hydradx_traits::registry::Inspect>::is_sufficient(tr.asset_out)
+	{
+		hydradx_runtime::InsufficientEDinHDX::get() as i128
+	} else {
+		0
+	};
 	let assets = [tr.asset_in, tr.asset_out];
 	let (parties, mint_burn) = counterparties(&tr);
 	let before: Vec<[Balance; 2]> = parties.iter().map(|p| assets.map(|a| bal(a, p))).collect();
@@ -254,7 +264,9 @@ pub fn check_trade(cfg: &Config, tr: Trade, dispatch: impl FnOnce() -> bool) {
 	// Exact for everything else.
 	let tol = if aave || is_contract_ledger(tr.asset_in) || is_contract_ledger(tr.asset_out) { 2 * swaps } else { 0 };
 
-	if cfg.accounting && swaps > 0 && ((net_in - spent).abs() > tol || (net_out - received).abs() > tol) {
+	let extra_in = spent - net_in;
+	let in_ok = extra_in.abs() <= tol || (ed_fee > 0 && extra_in >= 0 && extra_in <= ed_fee + tol);
+	if cfg.accounting && swaps > 0 && (!in_ok || (net_out - received).abs() > tol) {
 		violation(
 			"accounting",
 			format!(

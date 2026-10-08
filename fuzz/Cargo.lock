@@ -3455,7 +3455,11 @@ dependencies = [
 name = "hydration-fuzz-snapshot"
 version = "0.1.0"
 dependencies = [
+ "cumulus-pallet-parachain-system",
+ "frame-support",
  "hydration-fuzz-harness",
+ "orml-traits",
+ "pallet-intent",
 ]
 
 [[package]]
@@ -10192,11 +10196,6 @@ version = "24.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
 
 [[patch.unused]]
-name = "polkadot-sdk"
-version = "2506.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
 name = "polkadot-service"
 version = "25.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
@@ -10239,11 +10238,6 @@ source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-st
 [[patch.unused]]
 name = "sc-consensus-aura"
 version = "0.51.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-consensus-epochs"
-version = "0.50.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
 
 [[patch.unused]]
@@ -10487,6 +10481,11 @@ version = "24.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
 
 [[patch.unused]]
+name = "polkadot-sdk"
+version = "2506.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
 name = "polkadot-service"
 version = "25.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
@@ -10529,6 +10528,11 @@ source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-st
 [[patch.unused]]
 name = "sc-consensus-aura"
 version = "0.51.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-consensus-epochs"
+version = "0.50.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
 
 [[patch.unused]]

@@ -47,6 +47,9 @@ pub fn initialize_block(block: u32, prev_header: Option<&Header>) {
 		// Relay slots are 6 s too; one fresh relay slot per block keeps the velocity check happy.
 		current_slot: cumulus_primitives_core::relay_chain::Slot::from(new_timestamp / 6_000),
 		included_para_head: Some(parent_head.clone()),
+		// No downward messages are delivered, so the relay's DMQ head must equal the one already
+		// processed (mainnet state stores a real, non-zero head; the runtime asserts equality).
+		dmq_mqc_head: Some(cumulus_pallet_parachain_system::LastDmqMqcHead::<Runtime>::get().head()),
 		..Default::default()
 	};
 	let (relay_parent_storage_root, relay_chain_state) = sproof_builder.into_state_root_and_proof();

@@ -5,4 +5,8 @@ edition = "2021"
 publish = false
 
 [dependencies]
+frame-support = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
+orml-traits = { git = "https://github.com/galacticcouncil/open-runtime-module-library", branch = "polkadot-stable2506" }
+pallet-intent = { path = "../../../hydration-node/pallets/intent" }
+cumulus-pallet-parachain-system = { git = "https://github.com/galacticcouncil/polkadot-sdk", branch = "polkadot-stable2506-11-patch" }
 harness = { package = "hydration-fuzz-harness", path = "../harness" }

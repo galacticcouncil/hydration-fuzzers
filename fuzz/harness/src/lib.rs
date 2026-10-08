@@ -216,7 +216,10 @@ mod tests {
 		};
 		engine.run_scenario(&s);
 		let (u3b, a3b, u9b, a9b) = (bal(&mut engine, 3, u_asset), bal(&mut engine, 3, a_asset), bal(&mut engine, 9, u_asset), bal(&mut engine, 9, a_asset));
-		assert_eq!((u9, a9), (u9b, a9b), "actor 9 must be untouched in single-actor mode");
+		// Actor 9 must not act: its underlying is unchanged; its aToken balance may only grow by interest
+		// accrued on the reserve actor 3 touched (balanceOf is index-scaled on live mainnet state).
+		assert_eq!(u9, u9b, "actor 9 must be untouched in single-actor mode (underlying)");
+		assert!(a9b >= a9 && a9b - a9 <= a9 / 100, "actor 9 aToken moved beyond interest: {a9} -> {a9b}");
 		// Supplied a quarter, withdrew a quarter of the resulting aTokens: net aTokens up, underlying down.
 		assert!(a3b > a3 && u3b < u3, "lifecycle did not run on actor 3: aToken {a3}->{a3b}, underlying {u3}->{u3b}");
 	}
@@ -230,14 +233,17 @@ mod tests {
 			return;
 		}
 		let mut engine = super::Engine::new(&path);
+		let stored = |e: &mut super::Engine| e.ext.execute_with(|| pallet_intent::Intents::<hydradx_runtime::Runtime>::iter_keys().count());
+		let before = stored(&mut engine);
 		let spec = |who, a, b| super::action::IntentSpec { who, asset_in: a, asset_out: b, amount_in: Amount::Frac(2), limit: 0, partial: false };
 		let s = Scenario {
 			flags: Flags { circuit_breaker_off: true, solve_each_block: false, actor: None },
 			actions: vec![Action::IceRound { intents: vec![spec(1, 0, 1), spec(2, 1, 0), spec(3, 0, 2)], lapse: 1, mutate: Some(9) }],
 		};
 		engine.run_scenario(&s);
-		let left = engine.ext.execute_with(|| pallet_intent::Intents::<hydradx_runtime::Runtime>::iter_keys().count());
-		assert!(left < 3, "no intent was settled: {left} of 3 still stored");
+		// 3 submitted on top of whatever the snapshot holds; at least one of ours must have settled.
+		let left = stored(&mut engine);
+		assert!(left < before + 3, "no intent was settled: {} of 3 still stored (snapshot had {before})", left.saturating_sub(before));
 	}
 
 	/// Mainnet state stores the real relay block number; block production must continue from it

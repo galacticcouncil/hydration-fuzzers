@@ -77,6 +77,42 @@ fn patch() {
 	}
 	pallet_dispatcher::AaveManagerAccount::<R>::put(actor(AAVE_MANAGER_ACTOR));
 
+	// Pending mainnet intents make every solver run in the fuzzer solve 30+ intents over all venues
+	// (~1 s each, usually with no solution), and after a slim scrape their reserved funds may be gone.
+	// Default: cancel them all, the fuzzer submits its own. FUZZ_KEEP_MAINNET_INTENTS=1 keeps the
+	// consistent ones (full scrape), cancelling only those whose reserved funds are missing.
+	{
+		let keep = std::env::var("FUZZ_KEEP_MAINNET_INTENTS").map(|v| v == "1").unwrap_or(false);
+		use orml_traits::NamedMultiReservableCurrency;
+		let ids: Vec<u128> = pallet_intent::Intents::<R>::iter_keys().collect();
+		let mut cancelled = 0;
+		for id in &ids {
+			let (Some(owner), Some(intent)) = (pallet_intent::Pallet::<R>::intent_owner(*id), pallet_intent::Intents::<R>::get(*id)) else { continue };
+			let reserved = <hydradx_runtime::Currencies as NamedMultiReservableCurrency<AccountId>>::reserved_balance_named(
+				&pallet_intent::NAMED_RESERVE_ID, intent.data.asset_in(), &owner);
+			if !keep || reserved < intent.data.amount_in() {
+				// `cancel_intent` is #[transactional]: outside a dispatch it needs a storage layer.
+				match frame_support::storage::transactional::with_storage_layer(|| pallet_intent::Pallet::<R>::cancel_intent(owner.clone(), *id)) {
+					Ok(()) => cancelled += 1,
+					Err(_) => {
+						// Reserved funds already gone (slim scrape): drop the entries directly.
+						pallet_intent::Intents::<R>::remove(*id);
+						pallet_intent::AccountIntents::<R>::remove(&owner, *id);
+						pallet_intent::AccountIntentCount::<R>::mutate(&owner, |c| *c = c.saturating_sub(1));
+						cancelled += 1;
+					}
+				}
+			}
+		}
+		println!("pending mainnet intents: {} kept, {cancelled} cancelled{}", ids.len() - cancelled, if keep { " (reserved funds missing)" } else { " (default; FUZZ_KEEP_MAINNET_INTENTS=1 keeps them)" });
+	}
+
+	// Mainnet runs with async backing and leaves pending (unincluded) blocks in state; the fuzzer's fake
+	// relay proof declares async backing off, under which the runtime requires that segment to be empty
+	// (`no space left for the block in the unincluded segment`). Treat every pending block as included.
+	cumulus_pallet_parachain_system::UnincludedSegment::<R>::kill();
+	cumulus_pallet_parachain_system::AggregatedUnincludedSegment::<R>::kill();
+
 	// Produce one block so runtime-upgrade migrations run here once, not in every scenario.
 	let b = frame_system::Pallet::<R>::block_number() + 1;
 	block::initialize_block(b, None);

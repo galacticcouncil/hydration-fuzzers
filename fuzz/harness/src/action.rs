@@ -380,7 +380,8 @@ fn end_block(cfg: &oracle::Config, block: u32, elapsed: Duration, last: bool) ->
 			log!("  known issue in block hook, scenario dropped: {msg}");
 			return false;
 		}
-		std::panic::resume_unwind(p);
+		// Re-panic (not resume_unwind) so the message is printed by the normal hook.
+		panic!("{msg}\n  in block {block} hooks");
 	}
 	let t1 = Instant::now();
 	oracle::after_block(cfg, block, last);
