@@ -10,14 +10,15 @@ set -euo pipefail
 cd "$(dirname "$0")/../targets/runtime"
 CORPUS=$(realpath "${1:-output/hydration-fuzz-runtime/corpus}")
 JOBS=${JOBS:-4}
-BIN=target/afl/release/hydration-fuzz-runtime
+BIN=${AFL_BIN:-target/afl/release/hydration-fuzz-runtime}
+[ -x "$BIN" ] || BIN=$(find target -type f -perm -u+x -name hydration-fuzz-runtime -path '*afl*' 2>/dev/null | head -1)
 LLVM_BIN="$(rustc --print sysroot)/lib/rustlib/x86_64-unknown-linux-gnu/bin"   # rustup component add llvm-tools-preview
 OUT=output/coverage
 
 # Single build: the AFL target carries -Cinstrument-coverage on top of AFL's instrumentation
 # (RUSTFLAGS="-Cinstrument-coverage" cargo ziggy build --no-honggfuzz --release) and FUZZ_REPLAY_ARGS=1
 # switches it from the fork-server loop to "replay argv in one process".
-[ -x "$BIN" ] || { echo "no AFL target at $BIN; build it first (see README §4)"; exit 1; }
+[ -n "$BIN" ] && [ -x "$BIN" ] || { echo "no AFL target under target/ (*/afl/*/hydration-fuzz-runtime); build it first (see README §4) or set AFL_BIN"; exit 1; }
 
 echo "== replay $(ls "$CORPUS" | wc -l) inputs with $JOBS jobs"
 rm -rf profraw; mkdir -p profraw

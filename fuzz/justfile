@@ -99,7 +99,7 @@ merge-corpus dst="corpus_all":
 # -> targets/runtime/seeds_min. ~1 s per input per job; JOBS x 1.4 GB RAM (one snapshot per showmap).
 minimize src="corpus_all" jobs="8":
     rm -rf targets/runtime/seeds_min
-    {{fuzz_env}} {{afl_env}} ./scripts/cmin.sh {{src}} targets/runtime/seeds_min {{jobs}}
+    {{afl_env}} ./scripts/cmin.sh {{src}} targets/runtime/seeds_min {{jobs}}
 
 # End-of-run rotation, after stopping the fuzzer: triage every crash dir, merge + minimise all queues into the seed
 # set, coverage report of the minimised set, archive queues+crashes to archive/run-<ts>.tgz, drop .profraw litter.

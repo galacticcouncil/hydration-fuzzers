@@ -6,8 +6,16 @@
 # cmin aborts ("no instrumentation output detected"). The batch runs (-I filelist) use the forkserver and work.
 set -euo pipefail
 SRC=$(realpath "$1"); DST=$(realpath -m "$2"); JOBS=${3:-8}
-BIN=targets/runtime/target/afl/release/hydration-fuzz-runtime
-[ -x "$BIN" ] || { echo "no AFL binary at $BIN; run: just build-afl" >&2; exit 1; }
+# AFL_BIN=<path> overrides; otherwise the ziggy default, then anything named like it under target/.
+BIN=${AFL_BIN:-targets/runtime/target/afl/release/hydration-fuzz-runtime}
+[ -x "$BIN" ] || BIN=$(find targets/runtime/target -type f -perm -u+x -name hydration-fuzz-runtime -path '*afl*' 2>/dev/null | head -1)
+[ -n "$BIN" ] && [ -x "$BIN" ] || { echo "no AFL binary under targets/runtime/target (looked for */afl/*/hydration-fuzz-runtime); run: just build-afl, or set AFL_BIN=<path>" >&2; exit 1; }
+BIN=$(realpath "$BIN")
+# Oracles off: cmin only needs edges, and try_state/accounting are most of the per-input time. EVM edge
+# hashing stays on (those edges are part of what the seeds must preserve).
+export FUZZ_KNOWN_PANICS='VIOLATION[|Transfer - ' FUZZ_ORACLE_TRY_STATE=0 FUZZ_ORACLE_DIFFERENTIAL=0 \
+	FUZZ_ORACLE_ACCOUNTING=0 FUZZ_ORACLE_CONSERVATION=0 FUZZ_ORACLE_ERC20=0 FUZZ_ORACLE_AAVE=0 \
+	FUZZ_ORACLE_EVM_PANIC=0 FUZZ_ORACLE_ICE=0 FUZZ_MAX_BLOCK_MS=600000
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
 find "$SRC" -type f | sort > "$T/all"
 echo "== tracing $(wc -l < "$T/all") inputs with $JOBS afl-showmap jobs (~1 s per input per job)"
@@ -15,7 +23,7 @@ split -n "l/$JOBS" -d "$T/all" "$T/list."
 mkdir -p "$T/traces"
 for l in "$T"/list.*; do
 	(cd targets/runtime && AFL_FORKSRV_INIT_TMOUT=60000 cargo afl showmap -m none -t 30000 -Z -I "$l" -o "$T/traces" \
-		-- ./target/afl/release/hydration-fuzz-runtime > "$l.log" 2>&1) || echo "showmap job $l failed, see $l.log" &
+		-- "$BIN" > "$l.log" 2>&1) || echo "showmap job $l failed, see $l.log" &
 done
 wait
 python3 - "$SRC" "$DST" "$T/traces" <<'PY'
