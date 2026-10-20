@@ -6,10 +6,20 @@
 # cmin aborts ("no instrumentation output detected"). The batch runs (-I filelist) use the forkserver and work.
 set -euo pipefail
 SRC=$(realpath "$1"); DST=$(realpath -m "$2"); JOBS=${3:-8}
-# AFL_BIN=<path> overrides; otherwise the ziggy default, then anything named like it under target/.
-BIN=${AFL_BIN:-targets/runtime/target/afl/release/hydration-fuzz-runtime}
-[ -x "$BIN" ] || BIN=$(find targets/runtime/target -type f -perm -u+x -name hydration-fuzz-runtime -path '*afl*' 2>/dev/null | head -1)
-[ -n "$BIN" ] && [ -x "$BIN" ] || { echo "no AFL binary under targets/runtime/target (looked for */afl/*/hydration-fuzz-runtime); run: just build-afl, or set AFL_BIN=<path>" >&2; exit 1; }
+# AFL_BIN=<path> overrides; otherwise the workspace target dir (fuzz/target, cargo's default for a workspace
+# member), the per-crate one older cargo-afl layouts used, then anything named like it under those or CARGO_TARGET_DIR.
+BIN=${AFL_BIN:-}
+for c in target/afl/release/hydration-fuzz-runtime targets/runtime/target/afl/release/hydration-fuzz-runtime; do
+	[ -n "$BIN" ] || [ ! -x "$c" ] || BIN=$c
+done
+if [ -z "$BIN" ]; then
+	BIN=$(find target targets/runtime/target "${CARGO_TARGET_DIR:-/nonexistent}" -type f -perm -u+x -name hydration-fuzz-runtime -path '*afl*' 2>/dev/null | head -1 || true)
+fi
+if [ -z "$BIN" ] || ! [ -x "$BIN" ]; then
+	echo "no AFL binary: looked for */afl/*/hydration-fuzz-runtime under fuzz/target, fuzz/targets/runtime/target and" \
+	     "CARGO_TARGET_DIR=${CARGO_TARGET_DIR:-<unset>}. Run: just build-afl, or set AFL_BIN=<path>" >&2
+	exit 1
+fi
 BIN=$(realpath "$BIN")
 # Oracles off: cmin only needs edges, and try_state/accounting are most of the per-input time. EVM edge
 # hashing stays on (those edges are part of what the seeds must preserve).
@@ -18,7 +28,7 @@ export FUZZ_KNOWN_PANICS='VIOLATION[|Transfer - ' FUZZ_ORACLE_TRY_STATE=0 FUZZ_O
 	FUZZ_ORACLE_EVM_PANIC=0 FUZZ_ORACLE_ICE=0 FUZZ_MAX_BLOCK_MS=600000
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
 find "$SRC" -type f | sort > "$T/all"
-echo "== tracing $(wc -l < "$T/all") inputs with $JOBS afl-showmap jobs (~1 s per input per job)"
+echo "== tracing $(wc -l < "$T/all") inputs with $JOBS afl-showmap jobs; progress: ls $T/traces | wc -l"
 split -n "l/$JOBS" -d "$T/all" "$T/list."
 mkdir -p "$T/traces"
 for l in "$T"/list.*; do
