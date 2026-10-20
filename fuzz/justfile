@@ -89,7 +89,7 @@ restart:
 # (one parallel sha1sum pass; the file name is the hash prefix)
 merge-corpus dst="corpus_all":
     mkdir -p {{dst}}; \
-    find {{out}}/afl/*/queue {{out}}/afl.*/*/queue {{out}}/corpus -maxdepth 1 -type f -print0 2>/dev/null \
+    find {{out}} -type f -size +0c -not -path '*/.state/*' \( -path '*/afl/*/queue/*' -o -path '*/afl.*/*/queue/*' -o -path '{{out}}/corpus/*' \) -print0 \
       | xargs -0 -r -P "$(nproc)" -n 500 sha1sum \
       | awk '!seen[$1]++ { print substr($1, 1, 16) "\t" substr($0, 43) }' \
       | while IFS=$'\t' read -r h f; do [ -e "{{dst}}/$h" ] || cp "$f" "{{dst}}/$h"; done; \
