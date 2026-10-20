@@ -4,7 +4,7 @@ use crate::evm::{self as e, Token};
 use crate::oracle::{self, Trade};
 use crate::tables::{pick, u, Tables};
 use crate::ice::IntentKind;
-use crate::{actor, actor_evm, block, ice, log, AccountId, AssetId, Balance, Runtime, RuntimeCall, RuntimeOrigin};
+use crate::{actor, actor_evm, block, ice, log, AccountId, AssetId, Balance, Header, Runtime, RuntimeCall, RuntimeOrigin};
 use arbitrary::{Arbitrary, Unstructured};
 use codec::DecodeLimit;
 use frame_support::dispatch::GetDispatchInfo;
@@ -224,7 +224,9 @@ impl Scenario {
 pub fn execute(s: &Scenario, t: &Tables, cfg: &oracle::Config, first_block: u32) {
 	let mut block = first_block;
 	let t0 = Instant::now();
-	block::initialize_block(block, None);
+	if !start_block(cfg, block, None) {
+		return;
+	}
 	log!("  init block {block}: {:?}", t0.elapsed());
 	if s.flags.circuit_breaker_off {
 		disable_circuit_breaker(t);
@@ -244,11 +246,13 @@ pub fn execute(s: &Scenario, t: &Tables, cfg: &oracle::Config, first_block: u32)
 		if s.flags.solve_each_block {
 			guarded(cfg, || ice::solve_and_submit(cfg));
 		}
-		if !end_block(cfg, *block, started.elapsed(), false) {
+		let Some(prev) = end_block(cfg, *block, started.elapsed(), false) else {
+			return false;
+		};
+		*block += 1 + u32::from(n);
+		if !start_block(cfg, *block, Some(&prev)) {
 			return false;
 		}
-		*block += 1 + u32::from(n);
-		block::initialize_block(*block, None);
 		*started = Instant::now();
 		*weight = 0;
 		true
@@ -364,31 +368,47 @@ fn guarded(cfg: &oracle::Config, f: impl FnOnce()) {
 	storage::clear(SENTINEL);
 }
 
-/// Finalize the block and run the per-block oracles. A known panic raised from a block hook
-/// (`on_idle`/`on_finalize`, e.g. fee-processor converting aToken fees) cannot be rolled back like an
-/// action, so the scenario is dropped instead: returns `false` and the caller stops.
-fn end_block(cfg: &oracle::Config, block: u32, elapsed: Duration, last: bool) -> bool {
+/// Run a block hook phase, dropping the scenario on a known panic: a panic raised from a block hook
+/// (`on_initialize`/`on_idle`/`on_finalize`, e.g. a DCA execution or fee-processor converting aToken
+/// fees) cannot be rolled back like an action. Anything else is re-raised with the phase in the message.
+fn hooked<T>(cfg: &oracle::Config, block: u32, phase: &str, f: impl FnOnce() -> T) -> Option<T> {
+	let hook = std::panic::take_hook();
+	std::panic::set_hook(Box::new(|_| {}));
+	let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(f));
+	std::panic::set_hook(hook);
+	match r {
+		Ok(v) => Some(v),
+		Err(p) => {
+			let msg = p.downcast_ref::<String>().map(String::as_str).or_else(|| p.downcast_ref::<&str>().copied()).unwrap_or("");
+			if cfg.known_panics.iter().any(|k| msg.contains(k.as_str())) {
+				log!("  known issue in block {phase}, scenario dropped: {msg}");
+				return None;
+			}
+			// Re-panic (not resume_unwind) so the message is printed by the normal hook.
+			panic!("{msg}\n  in block {block} {phase}");
+		}
+	}
+}
+
+/// Start `block`; `prev` is the finalized header of the previous block of this scenario (None for the
+/// first one, whose parent is the snapshot). Passing it keeps `parent_hash` and the relay proof's
+/// included head consistent, so parachain-system drains its unincluded segment every block instead
+/// of hitting the capacity assert after a few lapses. false = scenario dropped.
+fn start_block(cfg: &oracle::Config, block: u32, prev: Option<&Header>) -> bool {
+	hooked(cfg, block, "on_initialize", || block::initialize_block(block, prev)).is_some()
+}
+
+/// Finalize the block and run the per-block oracles; None = scenario dropped (known hook panic).
+fn end_block(cfg: &oracle::Config, block: u32, elapsed: Duration, last: bool) -> Option<Header> {
 	if elapsed > cfg.max_block_time {
 		oracle::violation("block_time", format!("block {block} took {elapsed:?}"));
 	}
 	let t0 = Instant::now();
-	let hook = std::panic::take_hook();
-	std::panic::set_hook(Box::new(|_| {}));
-	let r = std::panic::catch_unwind(block::finalize_block);
-	std::panic::set_hook(hook);
-	if let Err(p) = r {
-		let msg = p.downcast_ref::<String>().map(String::as_str).or_else(|| p.downcast_ref::<&str>().copied()).unwrap_or("");
-		if cfg.known_panics.iter().any(|k| msg.contains(k.as_str())) {
-			log!("  known issue in block hook, scenario dropped: {msg}");
-			return false;
-		}
-		// Re-panic (not resume_unwind) so the message is printed by the normal hook.
-		panic!("{msg}\n  in block {block} hooks");
-	}
+	let header = hooked(cfg, block, "hooks", block::finalize_block)?;
 	let t1 = Instant::now();
 	oracle::after_block(cfg, block, last);
 	log!("  finalize {:?}, try_state {:?}", t1 - t0, t1.elapsed());
-	true
+	Some(header)
 }
 
 fn disable_circuit_breaker(t: &Tables) {

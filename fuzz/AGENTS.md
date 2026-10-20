@@ -229,8 +229,16 @@ something else. Replay is read-only and does not disturb a running fuzzer; triag
   inputs re-evaluated by a new binary, typically a known finding under a renamed oracle.
 - Every crash in a directory tends to descend from one or two seeds (`src:N`); AFL re-finds a crash it has already
   found until it is muted. Dozens of files ≠ dozens of bugs.
-- A known panic inside an action is rolled back; inside a block hook (`on_idle`/`on_finalize`, e.g. fee-processor
-  converting aToken fees) it cannot be, so the scenario is dropped (`known issue in block hook, scenario dropped`).
+- A known panic inside an action is rolled back; inside a block hook (`on_initialize`/`on_idle`/`on_finalize`,
+  e.g. a DCA execution or fee-processor converting aToken fees) it cannot be, so the scenario is dropped
+  (`known issue in block <phase>, scenario dropped`).
+- `panic .../parachain-system/src/lib.rs:1377` ("no space left for the block in the unincluded segment") in a
+  2-week run (2026-10-20) was the harness: blocks were started with no parent header, so the fake relay proof's
+  included head never matched an ancestor and the segment grew by one per block until capacity (3-4). Fixed by
+  threading the finalized header into the next `initialize_block`. Any new crash at that line means the
+  header/parent-hash chain is broken again.
+- `panic harness/src/action.rs:<line>` with the real message on the next lines is `guarded`'s re-raise, not a
+  harness bug; `scripts/triage.sh` unwraps it since 2026-10-20 (older logs show the raw line).
 - Contract-ledger assets (aTokens, HOLLAR) are ±1 wei per transfer by construction; the oracles allow 2 wei per
   swap. A 1-wei mismatch on those is not a finding.
 - Replay must run from `fuzz/` with the same `data/SNAPSHOT` the fuzzer used; a different snapshot changes amounts.
@@ -245,7 +253,9 @@ something else. Replay is read-only and does not disturb a running fuzzer; triag
 - **pallet-currencies try-runtime asserts fail on aToken transfers** (1 wei ray rounding): `currencies/src/lib.rs:358/359`
   and `fungibles.rs:388/392`, "Transfer - source sent / dest received incorrect amount". Reached via Router Aave
   withdraw, Stableswap `add_assets_liquidity` with an aToken, GigaHdx stake. Rolled back when raised inside an action;
-  still a crash when raised from block hooks (e.g. a DCA execution in `on_initialize`). Reproducers in
+  when raised from a block hook (`on_initialize` DCA execution, `on_idle` fee-processor) the scenario is dropped
+  (`hooked` in action.rs). Before 2026-10-20 the `on_initialize` case was not caught and showed up as
+  `panic .../currencies/src/fungibles.rs:392` in triage. Reproducers in
   `findings/known-atoken-rounding/`: `FUZZ_KNOWN_PANICS= ./target/release/hydration-fuzz-soak replay <file>`.
 - **Swapped3 for a UniswapV3 router buy under-reports `amount_in` by 1 wei** (HOLLAR spent = event + 1). Currently
   inside the ±2 contract-ledger tolerance; set the tolerance to 0 in `oracle::check_trade` to reproduce.

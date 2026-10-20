@@ -85,13 +85,15 @@ restart:
     [ -d targets/runtime/seeds ] || just seeds; \
     echo "queue parked as afl.$ts; now: just fuzz"
 
-# Merge every instance's queue + the shared corpus into one dir, deduplicated by content
+# Merge every instance's queue + parked queues + the shared corpus into one dir, deduplicated by content
+# (one parallel sha1sum pass; the file name is the hash prefix)
 merge-corpus dst="corpus_all":
-    mkdir -p {{dst}}; n=0; \
-    for f in {{out}}/afl/*/queue/* {{out}}/afl.*/*/queue/* {{out}}/corpus/*; do \
-        [ -f "$f" ] || continue; h=$(sha1sum "$f" | cut -c1-16); \
-        [ -e "{{dst}}/$h" ] || { cp "$f" "{{dst}}/$h"; n=$((n+1)); }; \
-    done; echo "$(ls {{dst}} | wc -l) unique inputs in {{dst}} ($n added)"
+    mkdir -p {{dst}}; \
+    find {{out}}/afl/*/queue {{out}}/afl.*/*/queue {{out}}/corpus -maxdepth 1 -type f -print0 2>/dev/null \
+      | xargs -0 -r -P "$(nproc)" -n 500 sha1sum \
+      | awk '!seen[$1]++ { print substr($1, 1, 16) "\t" substr($0, 43) }' \
+      | while IFS=$'\t' read -r h f; do [ -e "{{dst}}/$h" ] || cp "$f" "{{dst}}/$h"; done; \
+    echo "$(ls {{dst}} | wc -l) unique inputs in {{dst}}"
 
 # Coverage-preserving minimization (afl-cmin's algorithm via scripts/cmin.sh) of a merged corpus
 # -> targets/runtime/seeds_min. ~1 s per input per job; JOBS x 1.4 GB RAM (one snapshot per showmap).
@@ -101,11 +103,12 @@ minimize src="corpus_all" jobs="8":
 
 # End-of-run rotation, after stopping the fuzzer: triage every crash dir, merge + minimise all queues into the seed
 # set, coverage report of the minimised set, archive queues+crashes to archive/run-<ts>.tgz, drop .profraw litter.
-# Afterwards: `just fuzz 16`. Hours for a big run (minimise + cover replay every input once).
+# Afterwards: `just fuzz 16`. Hours for a big run (minimise + cover replay every input once). Safe to Ctrl+C and
+# re-run: triaged crashes are skipped via archive/triage.log.
 rotate jobs="8":
     ts=$(date +%s); mkdir -p archive; \
-    for d in {{out}}/crashes/*/; do [ -d "$d" ] && TRIAGE_LOG=archive/triage-$ts.log just triage "$d" || true; done; \
-    echo "--- triage log: archive/triage-$ts.log"; \
+    for d in {{out}}/crashes/*/; do [ -d "$d" ] && TRIAGE_LOG=archive/triage.log just triage "$d" || true; done; \
+    echo "--- triage log: archive/triage.log (crashes already in it are skipped, so an interrupted rotate resumes)"; \
     just merge-corpus corpus_all; \
     just minimize corpus_all {{jobs}}; \
     just restart; \
@@ -114,7 +117,7 @@ rotate jobs="8":
     JOBS={{jobs}} just cover targets/runtime/seeds; \
     tar czf archive/run-$ts.tgz -C {{out}} $(cd {{out}} && ls -d afl.* crashes 2>/dev/null) && rm -rf {{out}}/afl.* {{out}}/crashes; \
     find . ../../hydration-node -name '*.profraw' -delete; \
-    echo "ready: $(ls targets/runtime/seeds | wc -l) seeds, archive/run-$ts.tgz, archive/triage-$ts.log; now: just fuzz 16"
+    echo "ready: $(ls targets/runtime/seeds | wc -l) seeds, archive/run-$ts.tgz, archive/triage.log; now: just fuzz 16"
 
 # Histogram of action kinds in a corpus (decode only), default: the live AFL corpus
 stats-corpus dir=(out + "/corpus"):

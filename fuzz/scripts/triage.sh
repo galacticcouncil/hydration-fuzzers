@@ -17,12 +17,16 @@ for f in "$DIR"/*; do
 	key="$DIR/$(basename "$f")"
 	[ -z "$ALL" ] && grep -qF "$key ::" "$LOG" && continue
 	v=$(timeout "${REPLAY_TIMEOUT:-300}" ./target/release/hydration-fuzz-soak replay "$f" 2>&1 \
-		| grep -E 'VIOLATION|panicked at|: ok$' | grep -v 'action.rs:2' | head -1 \
+		| awk '/VIOLATION|panicked at|: ok$/ && !n { n=1; if ($0 ~ /panicked at harness\/src\/action.rs:[0-9]+:[0-9]+:$/) { re=1; next } print; exit }
+		       re && !m { m=$0; if (m ~ /VIOLATION/) { print m; exit } next }
+		       re && /^  at .+:[0-9]+$/ { sub(/^  at /, ""); print "thread '"'"'main'"'"' panicked at " $0 ": " m; exit }
+		       re { sub(/^ +/, ""); print "thread '"'"'main'"'"' panicked at ?: " m " (" $0 ")"; exit }
+		       END { if (re && !m) print "thread '"'"'main'"'"' panicked at ?: (no message)" }' \
 		| sed -E 's/^.*: ok$/REPLAYS CLEAN/; s/.*known issue, action rolled back: /KNOWN /' | cut -c1-220 || true)
 	echo "$key :: ${v:-NO OUTPUT}" | tee -a "$LOG"
 done
 echo
 echo "by kind (this dir):"
 grep -F "$DIR/" "$LOG" | sed 's/.* :: //' \
-	| sed -E 's/^(KNOWN )?VIOLATION\[([a-z_]+)\].*/\1\2/; s/^thread .main. panicked at ([^:]+:[0-9]+).*/panic \1/' \
+	| sed -E 's/^(KNOWN )?VIOLATION\[([a-z_]+)\].*/\1\2/; s/^thread .main. panicked at ([^:]+:[0-9]+).*/panic \1/; s/^thread .main. panicked at \?: (.{0,60}).*/panic \1/' \
 	| sort | uniq -c | sort -rn
