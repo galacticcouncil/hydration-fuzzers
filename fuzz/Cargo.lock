@@ -330,7 +330,7 @@ dependencies = [
 
 [[package]]
 name = "amm-simulator"
-version = "0.3.1"
+version = "0.4.1"
 dependencies = [
  "ethabi",
  "evm",
@@ -3118,7 +3118,7 @@ dependencies = [
 
 [[package]]
 name = "hydra-dx-math"
-version = "13.2.3"
+version = "13.2.4"
 dependencies = [
  "fixed",
  "num-traits",
@@ -3133,7 +3133,7 @@ dependencies = [
 
 [[package]]
 name = "hydradx-adapters"
-version = "1.15.0"
+version = "2.0.0"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -3188,7 +3188,7 @@ dependencies = [
 
 [[package]]
 name = "hydradx-runtime"
-version = "447.0.0"
+version = "455.0.0"
 dependencies = [
  "alloy-primitives 0.7.7",
  "alloy-sol-types 0.7.7",
@@ -3360,7 +3360,7 @@ dependencies = [
 
 [[package]]
 name = "hydradx-traits"
-version = "4.14.0"
+version = "5.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3506,7 +3506,7 @@ dependencies = [
 
 [[package]]
 name = "ice-solver"
-version = "0.9.0"
+version = "0.11.0"
 dependencies = [
  "frame-support",
  "hydra-dx-math",
@@ -3520,7 +3520,7 @@ dependencies = [
 
 [[package]]
 name = "ice-support"
-version = "1.6.0"
+version = "1.7.0"
 dependencies = [
  "frame-support",
  "hydra-dx-math",
@@ -4367,7 +4367,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-asset-registry"
-version = "3.5.0"
+version = "4.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4736,7 +4736,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-dca"
-version = "1.21.1"
+version = "2.0.0"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -4783,7 +4783,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-dispatcher"
-version = "1.7.4"
+version = "1.8.0"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -4932,7 +4932,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-ema-oracle"
-version = "1.13.0"
+version = "1.13.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5003,7 +5003,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-evm-accounts"
-version = "1.7.0"
+version = "1.7.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5276,7 +5276,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-ice"
-version = "1.11.0"
+version = "1.13.0"
 dependencies = [
  "amm-simulator",
  "frame-benchmarking",
@@ -5302,7 +5302,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-ice-runtime-api"
-version = "1.2.0"
+version = "1.3.0"
 dependencies = [
  "ice-support",
  "parity-scale-codec",
@@ -5330,7 +5330,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-intent"
-version = "1.11.0"
+version = "1.13.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5398,7 +5398,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-liquidation"
-version = "2.6.0"
+version = "2.6.1"
 dependencies = [
  "ethabi",
  "ethereum",
@@ -5562,7 +5562,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-otc"
-version = "2.5.0"
+version = "2.5.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5579,7 +5579,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-otc-settlements"
-version = "1.4.2"
+version = "1.4.3"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -5972,7 +5972,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-transaction-multi-payment"
-version = "10.8.0"
+version = "11.0.0"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -6151,7 +6151,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-xyk"
-version = "8.2.0"
+version = "8.2.1"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -9906,6 +9906,291 @@ version = "24.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
 
 [[patch.unused]]
+name = "polkadot-service"
+version = "25.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "polkadot-statement-table"
+version = "20.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-basic-authorship"
+version = "0.50.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-chain-spec"
+version = "44.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-cli"
+version = "0.53.1"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-client-api"
+version = "40.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-client-db"
+version = "0.47.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-consensus"
+version = "0.50.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-consensus-aura"
+version = "0.51.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-consensus-grandpa"
+version = "0.36.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-executor"
+version = "0.43.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-keystore"
+version = "36.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-network"
+version = "0.51.2"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-network-common"
+version = "0.49.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-network-sync"
+version = "0.50.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-offchain"
+version = "46.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-rpc"
+version = "46.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-rpc-api"
+version = "0.50.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-service"
+version = "0.52.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-sysinfo"
+version = "43.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-telemetry"
+version = "29.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-tracing"
+version = "40.0.2"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-transaction-pool"
+version = "40.1.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-transaction-pool-api"
+version = "40.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sc-utils"
+version = "19.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sp-blockchain"
+version = "40.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sp-consensus"
+version = "0.43.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sp-database"
+version = "10.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "sp-rpc"
+version = "35.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "substrate-build-script-utils"
+version = "11.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "substrate-frame-rpc-system"
+version = "45.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "substrate-rpc-client"
+version = "0.50.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "substrate-state-trie-migration-rpc"
+version = "44.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-client-cli"
+version = "0.24.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-client-collator"
+version = "0.24.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-client-consensus-aura"
+version = "0.24.1"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-client-consensus-common"
+version = "0.24.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-client-consensus-proposer"
+version = "0.20.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-client-network"
+version = "0.24.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-client-pov-recovery"
+version = "0.24.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-client-service"
+version = "0.25.1"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-relay-chain-inprocess-interface"
+version = "0.25.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-relay-chain-interface"
+version = "0.24.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-relay-chain-minimal-node"
+version = "0.25.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "cumulus-relay-chain-rpc-interface"
+version = "0.24.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "frame-benchmarking-cli"
+version = "49.1.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "frame-remote-externalities"
+version = "0.52.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "pallet-im-online"
+version = "40.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "pallet-sudo"
+version = "41.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "pallet-transaction-payment-rpc"
+version = "44.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "polkadot-cli"
+version = "25.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "polkadot-node-core-pvf"
+version = "24.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "polkadot-node-network-protocol"
+version = "24.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "polkadot-node-primitives"
+version = "20.1.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "polkadot-node-subsystem"
+version = "24.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "polkadot-node-subsystem-util"
+version = "24.0.1"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
+name = "polkadot-overseer"
+version = "24.0.0"
+source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
+
+[[patch.unused]]
 name = "polkadot-sdk"
 version = "2506.0.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
@@ -10248,291 +10533,6 @@ source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-st
 [[patch.unused]]
 name = "sc-consensus-epochs"
 version = "0.50.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-consensus-grandpa"
-version = "0.36.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-executor"
-version = "0.43.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-keystore"
-version = "36.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-network"
-version = "0.51.2"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-network-common"
-version = "0.49.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-network-sync"
-version = "0.50.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-offchain"
-version = "46.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-rpc"
-version = "46.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-rpc-api"
-version = "0.50.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-service"
-version = "0.52.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-sysinfo"
-version = "43.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-telemetry"
-version = "29.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-tracing"
-version = "40.0.2"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-transaction-pool"
-version = "40.1.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-transaction-pool-api"
-version = "40.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-utils"
-version = "19.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sp-blockchain"
-version = "40.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sp-consensus"
-version = "0.43.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sp-database"
-version = "10.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sp-rpc"
-version = "35.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "substrate-build-script-utils"
-version = "11.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "substrate-frame-rpc-system"
-version = "45.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "substrate-rpc-client"
-version = "0.50.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "substrate-state-trie-migration-rpc"
-version = "44.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-client-cli"
-version = "0.24.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-client-collator"
-version = "0.24.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-client-consensus-aura"
-version = "0.24.1"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-client-consensus-common"
-version = "0.24.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-client-consensus-proposer"
-version = "0.20.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-client-network"
-version = "0.24.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-client-pov-recovery"
-version = "0.24.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-client-service"
-version = "0.25.1"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-relay-chain-inprocess-interface"
-version = "0.25.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-relay-chain-interface"
-version = "0.24.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-relay-chain-minimal-node"
-version = "0.25.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "cumulus-relay-chain-rpc-interface"
-version = "0.24.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "frame-benchmarking-cli"
-version = "49.1.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "frame-remote-externalities"
-version = "0.52.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "pallet-im-online"
-version = "40.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "pallet-sudo"
-version = "41.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "pallet-transaction-payment-rpc"
-version = "44.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "polkadot-cli"
-version = "25.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "polkadot-node-core-pvf"
-version = "24.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "polkadot-node-network-protocol"
-version = "24.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "polkadot-node-primitives"
-version = "20.1.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "polkadot-node-subsystem"
-version = "24.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "polkadot-node-subsystem-util"
-version = "24.0.1"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "polkadot-overseer"
-version = "24.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "polkadot-service"
-version = "25.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "polkadot-statement-table"
-version = "20.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-basic-authorship"
-version = "0.50.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-chain-spec"
-version = "44.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-cli"
-version = "0.53.1"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-client-api"
-version = "40.0.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-client-db"
-version = "0.47.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-consensus"
-version = "0.50.0"
-source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
-
-[[patch.unused]]
-name = "sc-consensus-aura"
-version = "0.51.0"
 source = "git+https://github.com/galacticcouncil/polkadot-sdk?branch=polkadot-stable2506-11-patch#6a657941f7f74e2ccc3b09695d9c00bee47a5d85"
 
 [[patch.unused]]

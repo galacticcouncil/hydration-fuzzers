@@ -199,16 +199,6 @@ pub fn check_trade(cfg: &Config, tr: Trade, dispatch: impl FnOnce() -> bool) {
 	}
 	let predicted = tr.sim.filter(|_| cfg.differential).and_then(|p| simulate(p, &tr));
 	let (in0, out0) = (bal(tr.asset_in, &tr.who), bal(tr.asset_out, &tr.who));
-	// First receipt of an insufficient asset charges the ED in HDX (`InsufficientEDinHDX`) from the
-	// trader on top of the swap: allowed as extra HDX spend, it is not part of the trade.
-	let ed_fee: i128 = if tr.asset_in == 0
-		&& !orml_tokens::Accounts::<Runtime>::contains_key(&tr.who, tr.asset_out)
-		&& !<hydradx_runtime::AssetRegistry as hydradx_traits::registry::Inspect>::is_sufficient(tr.asset_out)
-	{
-		hydradx_runtime::InsufficientEDinHDX::get() as i128
-	} else {
-		0
-	};
 	let assets = [tr.asset_in, tr.asset_out];
 	let (parties, mint_burn) = counterparties(&tr);
 	let before: Vec<[Balance; 2]> = parties.iter().map(|p| assets.map(|a| bal(a, p))).collect();
@@ -226,6 +216,8 @@ pub fn check_trade(cfg: &Config, tr: Trade, dispatch: impl FnOnce() -> bool) {
 	let (mut swaps, mut aave) = (0i128, false);
 	let (mut net_in, mut net_out) = (0i128, 0i128);
 	let mut fees_out = [0i128; 2];
+	// Fees the trader pays in `asset_in` on top of `inputs` (XYK buy: `inputs` is the pre-fee amount).
+	let mut fee_in = 0i128;
 	for e in events_since(ev0) {
 		let RuntimeEvent::Broadcast(pallet_broadcast::Event::Swapped3 {
 			swapper,
@@ -252,6 +244,7 @@ pub fn check_trade(cfg: &Config, tr: Trade, dispatch: impl FnOnce() -> bool) {
 			net_in -= (a.asset == tr.asset_in) as i128 * a.amount as i128;
 		}
 		for f in fees {
+			fee_in += (f.asset == tr.asset_in) as i128 * f.amount as i128;
 			let Some(i) = assets.iter().position(|a| *a == f.asset) else { continue };
 			let outside = match &f.destination {
 				Destination::Burned => true,
@@ -265,7 +258,7 @@ pub fn check_trade(cfg: &Config, tr: Trade, dispatch: impl FnOnce() -> bool) {
 	let tol = if aave || is_contract_ledger(tr.asset_in) || is_contract_ledger(tr.asset_out) { 2 * swaps } else { 0 };
 
 	let extra_in = spent - net_in;
-	let in_ok = extra_in.abs() <= tol || (ed_fee > 0 && extra_in >= 0 && extra_in <= ed_fee + tol);
+	let in_ok = extra_in.abs() <= tol || (extra_in >= 0 && extra_in <= fee_in + tol);
 	if cfg.accounting && swaps > 0 && (!in_ok || (net_out - received).abs() > tol) {
 		violation(
 			"accounting",

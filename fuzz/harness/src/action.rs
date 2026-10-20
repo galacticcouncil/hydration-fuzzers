@@ -3,6 +3,7 @@
 use crate::evm::{self as e, Token};
 use crate::oracle::{self, Trade};
 use crate::tables::{pick, u, Tables};
+use crate::ice::IntentKind;
 use crate::{actor, actor_evm, block, ice, log, AccountId, AssetId, Balance, Runtime, RuntimeCall, RuntimeOrigin};
 use arbitrary::{Arbitrary, Unstructured};
 use codec::DecodeLimit;
@@ -102,7 +103,7 @@ pub enum Action {
 	DispatchEvm { who: u8, target: Target, data: Calldata },
 	/// `limit` picks the min-out policy relative to the router quote: 0..=5 loose (half), 6 at spot,
 	/// 7..=8 tight (up to 5% under spot), 9 impossible (double). Random limits never solve.
-	SubmitIntent { who: u8, asset_in: u16, asset_out: u16, amount_in: Amount, limit: u8, partial: bool },
+	SubmitIntent { who: u8, asset_in: u16, asset_out: u16, amount_in: Amount, limit: u8, partial: bool, kind: IntentKind },
 	SolveAndSubmit,
 	SubmitSolution(Bytes),
 	RemoveIntent { who: u8, back: u8 },
@@ -124,6 +125,7 @@ pub struct IntentSpec {
 	pub amount_in: Amount,
 	pub limit: u8,
 	pub partial: bool,
+	pub kind: IntentKind,
 }
 
 #[derive(Arbitrary, Debug, Clone, Copy)]
@@ -271,14 +273,14 @@ pub fn execute(s: &Scenario, t: &Tables, cfg: &oracle::Config, first_block: u32)
 			}
 			Action::IceRound { intents, lapse, mutate } => {
 				for i in intents.iter().take(6) {
-					let a = Action::SubmitIntent { who: i.who, asset_in: i.asset_in, asset_out: i.asset_out, amount_in: i.amount_in, limit: i.limit, partial: i.partial };
+					let a = Action::SubmitIntent { who: i.who, asset_in: i.asset_in, asset_out: i.asset_out, amount_in: i.amount_in, limit: i.limit, partial: i.partial, kind: i.kind };
 					guarded(cfg, || run_one(&a, t, cfg, &mut weight));
 				}
 				if *lapse > 0 && !advance(u16::from(*lapse) - 1, &mut block, &mut started, &mut weight) {
 					return;
 				}
 				guarded(cfg, || {
-					if let Some((originals, solution)) = ice::solve() {
+					if let Some((originals, solution)) = ice::solve(cfg) {
 						if let Some(m) = mutate {
 							ice::submit_mutated(cfg, &originals, &solution, *m);
 						}
@@ -969,7 +971,7 @@ fn run(a: &Action, t: &Tables, cfg: &oracle::Config) {
 				RuntimeOrigin::signed(actor(*who)),
 			);
 		}
-		SubmitIntent { who, asset_in, asset_out, amount_in, limit, partial } => {
+		SubmitIntent { who, asset_in, asset_out, amount_in, limit, partial, kind } => {
 			let (Some(ai), Some(ao)) = (pick(&t.omnipool, *asset_in), pick(&t.omnipool, *asset_out)) else { return };
 			let w = actor(*who);
 			let ed = |a: AssetId| <hydradx_runtime::AssetRegistry as hydradx_traits::registry::Inspect>::existential_deposit(a).unwrap_or(1).max(1);
@@ -993,7 +995,7 @@ fn run(a: &Action, t: &Tables, cfg: &oracle::Config) {
 			}
 			.max(ed(ao));
 			log!("  quote {quote:?} -> min out {amount_out}");
-			ice::submit_intent(w, ai, ao, amount_in, amount_out, *partial);
+			ice::submit_intent(w, ai, ao, amount_in, amount_out, *partial, *kind);
 		}
 		SolveAndSubmit => ice::solve_and_submit(cfg),
 		SubmitSolution(b) => ice::submit_raw_solution(cfg, &b.0),

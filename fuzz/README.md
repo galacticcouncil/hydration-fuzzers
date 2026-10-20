@@ -218,8 +218,18 @@ rm -rf output/hydration-fuzz-runtime/corpus          # a sync copy of afl/'s que
 # then the `cargo ziggy fuzz ... -i seeds` command from step 4
 ```
 
-To keep an old queue instead, minimise it once and feed it back with `-i`:
-`$E cargo ziggy minimize --release -e afl-plus-plus -i output/hydration-fuzz-runtime/corpus.old -o seeds_min` and then `-i seeds_min`.
+To keep what the old run found, run the whole end-of-run rotation in one go (fuzzer stopped first):
+
+```bash
+just rotate 16        # triage all crash dirs -> archive/triage-<ts>.log; merge all queues -> corpus_all/;
+                      # afl-cmin -> seeds/ (smallest set with the same edge coverage); coverage of it (§7);
+                      # queues+crashes -> archive/run-<ts>.tgz; .profraw litter removed
+just fuzz 16          # resumes at the old coverage within minutes instead of replaying the whole queue
+```
+
+Hours for a big run: minimise and coverage replay every input once (~1 s each, parallel over the job count).
+The pieces are also separate targets: `just merge-corpus`, `just minimize corpus_all 8`, `just restart`,
+`just cover <dir>`, `just triage <crash dir>`.
 
 After changing harness code, rebuild both binaries (`$E cargo build --release` and
 `RUSTFLAGS=-Cinstrument-coverage $E cargo ziggy build --no-honggfuzz --release` in `targets/runtime`); a running AFL keeps using the old target

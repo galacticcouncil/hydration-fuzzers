@@ -170,7 +170,7 @@ mod tests {
 				Action::Lapse(3),
 				Action::AaveTrade { who: 3, reserve: 0, supply: true, amount },
 				Action::Router { who: 4, sell: true, asset_in: 0, asset_out: 5, amount, hops: vec![] },
-				Action::SubmitIntent { who: 5, asset_in: 0, asset_out: 1, amount_in: amount, limit: 0, partial: true },
+				Action::SubmitIntent { who: 5, asset_in: 0, asset_out: 1, amount_in: amount, limit: 0, partial: true, kind: super::ice::IntentKind::Swap },
 				Action::SolveAndSubmit,
 			],
 		};
@@ -235,10 +235,17 @@ mod tests {
 		let mut engine = super::Engine::new(&path);
 		let stored = |e: &mut super::Engine| e.ext.execute_with(|| pallet_intent::Intents::<hydradx_runtime::Runtime>::iter_keys().count());
 		let before = stored(&mut engine);
-		let spec = |who, a, b| super::action::IntentSpec { who, asset_in: a, asset_out: b, amount_in: Amount::Frac(2), limit: 0, partial: false };
+		use super::ice::IntentKind;
+		let spec = |who, a, b, kind| super::action::IntentSpec { who, asset_in: a, asset_out: b, amount_in: Amount::Frac(2), limit: 0, partial: false, kind };
+		// One of each kind: the match-first window (1 s) is closed after the 1-block lapse, the DCA is due at once.
+		let intents = vec![
+			spec(1, 0, 1, IntentKind::MatchFirst { window: 0 }),
+			spec(2, 1, 0, IntentKind::Swap),
+			spec(3, 0, 2, IntentKind::Dca { period: 0, budget: Some(1), slip: 50 }),
+		];
 		let s = Scenario {
 			flags: Flags { circuit_breaker_off: true, solve_each_block: false, actor: None },
-			actions: vec![Action::IceRound { intents: vec![spec(1, 0, 1), spec(2, 1, 0), spec(3, 0, 2)], lapse: 1, mutate: Some(9) }],
+			actions: vec![Action::IceRound { intents, lapse: 1, mutate: Some(9) }],
 		};
 		engine.run_scenario(&s);
 		// 3 submitted on top of whatever the snapshot holds; at least one of ours must have settled.

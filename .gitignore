@@ -20,4 +20,7 @@ fuzz/data/scrape/
 fuzz/findings/*.bin
 fuzz/targets/*/output/
 fuzz/targets/*/seeds/
+fuzz/targets/*/seeds_min/
+fuzz/corpus_all/
+fuzz/archive/
 fuzz/monitor/

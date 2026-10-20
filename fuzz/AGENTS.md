@@ -12,7 +12,7 @@ The primary fuzzer. Design: `../docs/fuzzing-v2-proposal.md`. One Cargo workspac
 | `targets/ice-solver/` | ziggy/AFL++ target: bytes → intents → `ice_solver::v4::Solver` on simulator state captured once. No chain execution. |
 | `snapshot/` | Builds `data/SNAPSHOT` (mainnet state + Substrate-side patches). |
 
-Depends on the sibling `../../hydration-node` checkout by path (runtime 447 @ `c08bba368` when written). Git dep pins in
+Depends on the sibling `../../hydration-node` checkout by path (runtime 455 @ `a9002ea95` when last aligned). Git dep pins in
 `Cargo.lock` must match `../../hydration-node/Cargo.lock` (see `../AGENTS.md`). The harness does **not** depend on
 `scraper` or `ice-solver-bench`, so no node / rocksdb / libp2p is compiled.
 
@@ -84,7 +84,7 @@ All asset/pool/contract choices index tables read from the snapshot at startup (
 | `EvmCall{target, calldata}` | `pallet_evm::call` signed by the actor; target = known contract or any H160; calldata = ABI (selector table) or raw |
 | `Impersonate` | `Executor::call` as any address from the users table (no signature) |
 | `DispatchEvm` | `Dispatcher::dispatch_evm_call(EVM::call)` |
-| `SubmitIntent`, `RemoveIntent`, `SolveAndSubmit`, `SubmitSolution(raw)` | pallet-intent; production solver via `pallet_ice::Pallet::run` + `submit_solution(none)`; SCALE-fuzzed `Solution` |
+| `SubmitIntent{.., kind}`, `RemoveIntent`, `SolveAndSubmit`, `SubmitSolution(raw)` | pallet-intent; `kind` = `Swap`, `MatchFirst{window}` (offered only against opposite flow for 1–256 s) or `Dca{period, budget, slip}` (ICE DCA, period 15–270 blocks, 1–4 trades or rolling, slippage 0–50 %; fills early against opposite flow within `DcaEarlyWindow`); production solver via `pallet_ice::Pallet::run` + `submit_solution(none)`; SCALE-fuzzed `Solution` |
 | `AaveLifecycle { who, reserve, amount, lapse }` | related ops on one actor/reserve: supply `amount` of the underlying → advance `lapse` blocks → withdraw `amount` of the *live* aToken balance (router Aave path both ways). A failed supply isn't fatal. |
 | `IceRound { intents: Vec<IntentSpec>, lapse, mutate }` | self-contained ICE round: up to 6 `SubmitIntent`s → advance `lapse` blocks → solver + settlement (`ice_settlement` oracle). With `mutate`, a nudged copy of the solver's solution (one amount ±1/×2 or score+1) is submitted first: the pallet must reject it, or the accepted solution must pass the independent oracle (`ice_validator`). Raised settlement frequency ~10× (51 settlements / 3-min soak vs 4). |
 
@@ -103,7 +103,7 @@ No action ever deploys or modifies a contract.
 | ERC20 ↔ Substrate | `FUZZ_ORACLE_ERC20` (1) | `balanceOf(asset_address)` == `Currencies::free_balance` for the trade's assets/actor |
 | Aave | `FUZZ_ORACLE_AAVE` (1) | after `AavePool` actions: aToken `totalSupply == rayMul(scaledTotalSupply, normalizedIncome)` ±1; HF ≥ 1 after a successful borrow/withdraw/collateral toggle |
 | EVM Panic / INVALID | `FUZZ_ORACLE_EVM_PANIC` (1), `FUZZ_EVM_PANIC_IGNORE` (`11`) | every call frame's exit via `evm::tracing`; 0x11 ignored by default (solmate-style tokens such as HOLLAR revert with it on insufficient balance) |
-| ICE | `FUZZ_ORACLE_ICE` (1) | vendored `ice-fuzz` oracle: solver solutions (limits, bounds), accepted fuzzed solutions (limits + conservation). Plus `ice_settlement` after every accepted `submit_solution`: each owner's `free + reserved` drops by exactly the resolved `amount_in` and free rises by exactly `amount_out` (±2 wei for contract-ledger assets); the holding pot and `FeeReceiver` never lose funds; all-or-nothing intents are removed, partial ones have their filled amount increased |
+| ICE | `FUZZ_ORACLE_ICE` (1) | vendored `ice-fuzz` oracle: solver solutions (limits, bounds), accepted fuzzed solutions (limits + conservation). Plus `ice_settlement` after every accepted `submit_solution`: each owner's `free + reserved` drops by exactly the resolved `amount_in` and free rises by exactly `amount_out` (±2 wei for contract-ledger assets); the holding pot and `FeeReceiver` never lose funds; all-or-nothing intents are removed, partial ones have their filled amount increased, a filled DCA advanced `last_execution_block` and did not gain budget. `ice_conditional` on every `get_valid_intents`: only plain `Swap` views reach the solver, and a match-first swap inside its window or a DCA ahead of its slot is offered only if another intent on the reverse pair is stored (necessary condition of the pallet's rate-dependent coverage rule) |
 | known issues | `FUZZ_KNOWN_PANICS` (`Transfer - source sent incorrect amount\|Transfer - dest received incorrect amount`) | a panic containing one of these `\|`-separated substrings rolls the action back (own storage layer) instead of crashing; set `FUZZ_KNOWN_PANICS=` to crash on them |
 
 `FUZZ_EVM_COVERAGE` (1 in AFL builds, 0 otherwise): the EVM step hook hashes `(contract, pc)` into `__afl_area_ptr`.
@@ -267,13 +267,14 @@ something else. Replay is read-only and does not disturb a running fuzzer; triag
   segment (cleared in the patch step; the fake proof declares async backing off). Pending mainnet intents are
   cancelled in the patch step by default (the solver spent ~1 s per solve on 34 of them with no solution).
   The Uniswap partial-fill leak reproduced on a second pool (`1006->222`): it is the executor, mute with
-  `VIOLATION[router_leftover]` (any pool). `InsufficientEDinHDX` (1.1 HDX charged on first receipt of an
-  insufficient asset) looked like an XYK accounting mismatch; the accounting oracle now allows it.
+  `VIOLATION[router_leftover]` (any pool). XYK `buy` reports the pool fee in `Swapped3.fees` on top of
+  `inputs` (monitor report 2026-10-08): the accounting oracle allows extra `asset_in` spend up to those fees.
+  (`InsufficientEDinHDX` is gone from the runtime since 455; the old allowance for it was removed.)
 
 ## Known limitations / next steps
 
 - Throughput is EVM-bound; profile `evm` with debug-assertions off for the interpreter only, or cache simulator
   snapshots per block.
-- `Ethereum::transact` (signed) not covered; DCA intents not generated; no corpus minimisation / CI job yet.
+- `Ethereum::transact` (signed) not covered; DCA intents not generated; no CI job yet (`just rotate` = triage + afl-cmin of all queues + archive, see README §6).
 - Aave users come from bound EVM accounts with collateral (first 400 scanned, capped at 64; 64 found on this
   snapshot). Liquidations are reachable only once fuzzed trades move the EMA-fed prices far enough.

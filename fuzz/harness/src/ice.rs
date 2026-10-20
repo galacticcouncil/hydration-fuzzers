@@ -5,7 +5,7 @@ use crate::{log, oracle, AccountId, AssetId, Balance, Runtime, RuntimeOrigin};
 use codec::DecodeLimit;
 use crate::ice_oracle::{check_solution, SolverIntent, Violation};
 use hydradx_traits::amm::{SimulatorConfig, SimulatorSet};
-use ice_support::{IntentDataInput, Partial, Solution, SwapParams};
+use ice_support::{DcaParams, IntentData, IntentDataInput, Partial, Solution, SwapParams};
 use orml_traits::{MultiCurrency, NamedMultiReservableCurrency};
 use std::collections::BTreeMap;
 
@@ -17,18 +17,23 @@ pub fn initial_state() -> State {
 	<<hydradx_runtime::HydrationSimulatorConfig as SimulatorConfig>::Simulators as SimulatorSet>::initial_state()
 }
 
-pub fn submit_intent(who: AccountId, asset_in: AssetId, asset_out: AssetId, amount_in: Balance, amount_out: Balance, partial: bool) {
-	let input = pallet_intent::types::IntentInput {
-		data: IntentDataInput::Swap(SwapParams {
+pub fn submit_intent(who: AccountId, asset_in: AssetId, asset_out: AssetId, amount_in: Balance, amount_out: Balance, partial: bool, kind: IntentKind) {
+	let swap = SwapParams { asset_in, asset_out, amount_in, amount_out, partial };
+	let data = match kind {
+		IntentKind::Swap => IntentDataInput::Swap(swap),
+		// 1..=256 s; blocks are 6 s, so the window is open at a same-block solve and closes within an `IceRound`.
+		IntentKind::MatchFirst { window } => IntentDataInput::MatchFirstSwap { swap, match_window: (1 + u64::from(window)) * 1000 },
+		IntentKind::Dca { period, budget, slip } => IntentDataInput::Dca(DcaParams {
 			asset_in,
 			asset_out,
 			amount_in,
 			amount_out,
-			partial,
+			slippage: sp_runtime::Permill::from_percent(u32::from(slip) % 51),
+			budget: budget.map(|n| amount_in.saturating_mul(1 + u128::from(n) % 4)),
+			period: 15 + u32::from(period),
 		}),
-		deadline: None,
-		on_resolved: None,
 	};
+	let input = pallet_intent::types::IntentInput { data, deadline: None, on_resolved: None };
 	let r = pallet_intent::Pallet::<Runtime>::submit_intent(RuntimeOrigin::signed(who), input);
 	log!("  submit_intent => {r:?}");
 }
@@ -40,11 +45,40 @@ pub fn remove_intent(who: AccountId, back: u8) {
 	log!("  remove_intent {id} => {r:?}");
 }
 
-fn valid_intents() -> Vec<SolverIntent> {
-	pallet_intent::Pallet::<Runtime>::get_valid_intents()
-		.into_iter()
-		.map(|(id, i)| SolverIntent { id, data: i.data })
-		.collect()
+fn valid_intents(cfg: &oracle::Config) -> Vec<SolverIntent> {
+	let list = pallet_intent::Pallet::<Runtime>::get_valid_intents();
+	if cfg.ice {
+		check_conditional(&list);
+	}
+	list.into_iter().map(|(id, i)| SolverIntent { id, data: i.data }).collect()
+}
+
+/// `ice_conditional`: a match-first swap inside its window, or a DCA ahead of its slot, is offered
+/// to the solver only against opposite flow. The pallet's coverage rule is rate-dependent; the
+/// sound necessary condition checked here is that *some* other intent on the reverse pair is
+/// stored at all. Also: the solver only knows plain swaps, so no other variant may leak out.
+fn check_conditional(list: &[(u128, pallet_intent::types::Intent)]) {
+	let now = pallet_timestamp::Pallet::<Runtime>::get();
+	let block = frame_system::Pallet::<Runtime>::block_number();
+	let stored: BTreeMap<u128, IntentData> = pallet_intent::Intents::<Runtime>::iter().map(|(id, i)| (id, i.data)).collect();
+	for (id, view) in list {
+		if !matches!(view.data, IntentData::Swap(_)) {
+			oracle::violation("ice_conditional", format!("intent {id} offered to the solver as {:?}, not a plain swap", view.data));
+			continue;
+		}
+		let waiting = match stored.get(id) {
+			Some(IntentData::MatchFirstSwap { match_until, .. }) => now < *match_until,
+			Some(IntentData::Dca(d)) => block < d.last_execution_block.saturating_add(d.period),
+			_ => false,
+		};
+		if !waiting {
+			continue;
+		}
+		let (ai, ao) = (view.data.asset_in(), view.data.asset_out());
+		if !stored.iter().any(|(j, d)| j != id && d.asset_in() == ao && d.asset_out() == ai) {
+			oracle::violation("ice_conditional", format!("waiting intent {id} ({ai}->{ao}) offered with no reverse-pair intent stored"));
+		}
+	}
 }
 
 fn fee() -> sp_runtime::Permill {
@@ -59,8 +93,8 @@ fn report(kind: &str, v: Vec<Violation>) {
 
 /// Run the production solver on the current (possibly heavily drifted) state. Returns the valid
 /// intents it saw and the solution, if any.
-pub fn solve() -> Option<(Vec<SolverIntent>, Solution)> {
-	let originals = valid_intents();
+pub fn solve(cfg: &oracle::Config) -> Option<(Vec<SolverIntent>, Solution)> {
+	let originals = valid_intents(cfg);
 	log!("  {} valid intents ({} stored)", originals.len(), pallet_intent::Intents::<Runtime>::iter_keys().count());
 	if originals.is_empty() {
 		return None;
@@ -87,7 +121,7 @@ pub fn submit_solver_solution(cfg: &oracle::Config, originals: &[SolverIntent], 
 }
 
 pub fn solve_and_submit(cfg: &oracle::Config) {
-	if let Some((originals, solution)) = solve() {
+	if let Some((originals, solution)) = solve(cfg) {
 		submit_solver_solution(cfg, &originals, solution);
 	}
 }
@@ -129,6 +163,23 @@ pub fn submit_mutated(cfg: &oracle::Config, originals: &[SolverIntent], solution
 
 type Currencies = hydradx_runtime::Currencies;
 
+/// What `settle` recorded about a resolved intent before `submit_solution`.
+enum Pre {
+	Swap(Partial),
+	Dca { last: u32, budget: Balance },
+}
+
+/// Which `IntentDataInput` a `SubmitIntent` builds; the rest of the action is shared.
+#[derive(crate::arbitrary::Arbitrary, Debug, Clone, Copy)]
+pub enum IntentKind {
+	Swap,
+	/// Match-first swap, offered only against opposite flow for `(1 + window)` seconds.
+	MatchFirst { window: u8 },
+	/// ICE DCA: `amount_in` per trade every `15 + period` blocks, `budget` = 1..=4 trades (None = rolling),
+	/// slippage `slip % 51` %. Settles early only against opposite flow (`DcaEarlyWindow`).
+	Dca { period: u8, budget: Option<u8>, slip: u8 },
+}
+
 fn free(asset: AssetId, who: &AccountId) -> i128 {
 	<Currencies as MultiCurrency<AccountId>>::free_balance(asset, who) as i128
 }
@@ -148,7 +199,10 @@ fn settle(cfg: &oracle::Config, solution: &Solution) -> Result<(), ()> {
 	let fee_receiver = <Runtime as pallet_ice::Config>::FeeReceiver::get();
 	// (owner, asset) -> expected change of free balance and of free + reserved.
 	let mut expect: BTreeMap<(AccountId, AssetId), (i128, i128)> = BTreeMap::new();
-	let mut pre: Vec<(u128, AccountId, Option<Partial>)> = vec![];
+	// A DCA fill may unreserve the rest of its budget (last trade) or re-reserve from free (rolling):
+	// free of `asset_in` is unpredictable for these keys, free + reserved still is.
+	let mut free_unknown: Vec<(AccountId, AssetId)> = vec![];
+	let mut pre: Vec<(u128, AccountId, Option<Pre>)> = vec![];
 	for r in &solution.resolved_intents {
 		let Some(owner) = pallet_intent::Pallet::<Runtime>::intent_owner(r.id) else { continue };
 		let (ai, ao, x, y) = (r.data.asset_in(), r.data.asset_out(), r.data.amount_in() as i128, r.data.amount_out() as i128);
@@ -158,11 +212,14 @@ fn settle(cfg: &oracle::Config, solution: &Solution) -> Result<(), ()> {
 		let e_out = expect.entry((owner.clone(), ao)).or_default();
 		e_out.0 += y;
 		e_out.1 += y;
-		let partial = pallet_intent::Intents::<Runtime>::get(r.id).map(|i| match i.data {
-			ice_support::IntentData::Swap(s) => s.partial,
-			ice_support::IntentData::Dca(_) => Partial::No,
+		let state = pallet_intent::Intents::<Runtime>::get(r.id).map(|i| match i.data {
+			IntentData::Dca(d) => {
+				free_unknown.push((owner.clone(), ai));
+				Pre::Dca { last: d.last_execution_block, budget: d.remaining_budget }
+			}
+			other => Pre::Swap(other.swap().map(|s| s.partial).unwrap_or(Partial::No)),
 		});
-		pre.push((r.id, owner, partial));
+		pre.push((r.id, owner, state));
 	}
 	let assets: Vec<AssetId> = { let mut a: Vec<_> = expect.keys().map(|k| k.1).collect(); a.sort(); a.dedup(); a };
 	let before: BTreeMap<(AccountId, AssetId), (i128, i128)> = expect
@@ -177,11 +234,14 @@ fn settle(cfg: &oracle::Config, solution: &Solution) -> Result<(), ()> {
 		return Err(());
 	}
 
+	let dca = pre.iter().filter(|(_, _, s)| matches!(s, Some(Pre::Dca { .. }))).count();
+	log!("  settled {} intents ({dca} DCA)", pre.len());
 	for (k, (d_free, d_total)) in &expect {
 		let (f0, t0) = before[k];
 		let (f1, t1) = (free(k.1, &k.0), free(k.1, &k.0) + reserved(k.1, &k.0));
 		let tol = if oracle::is_contract_ledger(k.1) { 2 } else { 0 };
-		if (f1 - f0 - d_free).abs() > tol || (t1 - t0 - d_total).abs() > tol {
+		let free_ok = free_unknown.contains(k) || (f1 - f0 - d_free).abs() <= tol;
+		if !free_ok || (t1 - t0 - d_total).abs() > tol {
 			oracle::violation(
 				"ice_settlement",
 				format!(
@@ -199,17 +259,25 @@ fn settle(cfg: &oracle::Config, solution: &Solution) -> Result<(), ()> {
 			oracle::violation("ice_settlement", format!("fee receiver lost asset {a}: {} -> {}", fee0[i], free(*a, &fee_receiver)));
 		}
 	}
-	for (id, owner, partial) in pre {
+	for (id, owner, state) in pre {
 		let still = pallet_intent::Intents::<Runtime>::get(id);
-		match (partial, still) {
-			(Some(Partial::No), Some(_)) => oracle::violation("ice_settlement", format!("all-or-nothing intent {id} of {owner:?} still stored after resolution")),
-			(Some(Partial::Yes(filled)), Some(i)) => {
-				let now = match i.data {
-					ice_support::IntentData::Swap(s) => s.partial,
-					_ => Partial::No,
-				};
+		match (state, still) {
+			(Some(Pre::Swap(Partial::No)), Some(_)) => oracle::violation("ice_settlement", format!("all-or-nothing intent {id} of {owner:?} still stored after resolution")),
+			(Some(Pre::Swap(Partial::Yes(filled))), Some(i)) => {
+				let now = i.data.swap().map(|s| s.partial).unwrap_or(Partial::No);
 				if !matches!(now, Partial::Yes(f) if f > filled) {
 					oracle::violation("ice_settlement", format!("partial intent {id} of {owner:?} filled amount did not increase: {filled} -> {now:?}"));
+				}
+			}
+			(Some(Pre::Dca { last, budget }), Some(i)) => {
+				let IntentData::Dca(d) = i.data else {
+					oracle::violation("ice_settlement", format!("DCA intent {id} of {owner:?} changed variant after resolution"));
+					continue;
+				};
+				// A fill consumes its slot (early ones too) and spends one trade of budget; a rolling
+				// re-reserve may top it back up, never above.
+				if d.last_execution_block <= last || d.remaining_budget > budget || d.remaining_budget < d.amount_in {
+					oracle::violation("ice_settlement", format!("DCA intent {id} of {owner:?}: last block {last} -> {}, budget {budget} -> {} (per trade {})", d.last_execution_block, d.remaining_budget, d.amount_in));
 				}
 			}
 			_ => {}
@@ -222,7 +290,7 @@ fn settle(cfg: &oracle::Config, solution: &Solution) -> Result<(), ()> {
 /// the validator is the bug.
 pub fn submit_raw_solution(cfg: &oracle::Config, bytes: &[u8]) {
 	let Ok(mut solution) = Solution::decode_with_depth_limit(16, &mut &bytes[..]) else { return };
-	let originals = valid_intents();
+	let originals = valid_intents(cfg);
 	// Point the fuzzed solution at intents that exist, so it gets past the id check.
 	for (r, o) in solution.resolved_intents.iter_mut().zip(originals.iter()) {
 		r.id = o.id;
